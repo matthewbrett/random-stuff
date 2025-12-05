@@ -4,7 +4,7 @@
 
 **BRICKWAVE** is a browser-based pixel platformer game inspired by 80s underground runners, featuring a unique "phase brick" mechanic where blocks toggle between solid and ghost states on a rhythmic cycle.
 
-**Current Status**: Phase 4 Complete - Phase brick mechanic fully implemented with visual feedback and HUD indicator, ready for Phase 5 (Collectibles & Scoring)
+**Current Status**: Phase 5 Complete - Collectibles & Scoring system fully implemented with coins, HUD, and Echo Charges, ready for Phase 6 (Enemies & Combat)
 
 ## Key Information
 
@@ -79,8 +79,8 @@ The project follows a 10-phase plan outlined in `DEVELOPMENT_PLAN.md`:
 **Phase 2**: Core Player Movement ✅
 **Phase 3**: Level System & Tiles ✅
 **Phase 4**: Phase Bricks Mechanic ✅
-**Phase 5**: Collectibles & Scoring ⭐ ⬜
-**Phase 6**: Enemies & Combat ⬜
+**Phase 5**: Collectibles & Scoring ✅
+**Phase 6**: Enemies & Combat ⭐ ⬜
 **Phase 7**: Level Content (World 1-1 to 1-3) ⬜
 **Phase 8**: UI & Menus ⬜
 **Phase 9**: Persistence & Polish ⬜
@@ -196,16 +196,20 @@ As of 2025-12-05:
 - ✅ **Phase 2 Complete**: Full player movement with all mechanics (jump, dash, coyote time, jump buffer)
 - ✅ **Phase 3 Complete**: Level system with Tiled JSON loader, tile collision, one-way platforms, camera system
 - ✅ **Phase 4 Complete**: Phase brick mechanic with timing system, visual feedback, HUD indicator, and phase groups
-- 🎯 **Next Up**: Phase 5 - Implement Collectibles & Scoring system
+- ✅ **Phase 5 Complete**: Collectibles & Scoring system with coins, HUD, Echo Charges, and bonus tracking
+- 🎯 **Next Up**: Phase 6 - Implement Enemies & Combat
 
 **Key Files**:
-- `src/entities/Player.js` - Complete player movement system
+- `src/entities/Player.js` - Complete player movement system (integrated with ScoreManager)
 - `src/entities/PhaseBrick.js` - Phase brick with visual feedback and collision states
+- `src/entities/Coin.js` - Collectible coins with pulsing/floating animation
 - `src/systems/LevelLoader.js` - Tiled map loader with multi-layer support (including Phase layer)
 - `src/systems/PhaseManager.js` - Phase timing and group management system
 - `src/systems/PhaseIndicator.js` - HUD element showing phase progress
-- `src/scenes/GameScene.js` - Main game scene with level loading and phase management
-- `assets/levels/test-level-1.json` - Test level showcasing phase mechanics
+- `src/systems/ScoreManager.js` - Score, coins, Echo Charges, and bonus tracking
+- `src/systems/GameHUD.js` - Complete HUD display with all game information
+- `src/scenes/GameScene.js` - Main game scene with level loading, phase management, and coin collection
+- `assets/levels/test-level-1.json` - Test level with phase mechanics and coins
 
 ## When Working on This Project
 

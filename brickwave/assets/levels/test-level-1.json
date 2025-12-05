@@ -140,6 +140,29 @@
       ]
     },
     {
+      "name": "Coins",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "objects": [
+        {"name": "coin", "type": "coin", "x": 96, "y": 72, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 112, "y": 72, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 128, "y": 72, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 136, "y": 88, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 152, "y": 88, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 168, "y": 88, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 184, "y": 88, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 200, "y": 96, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 88, "y": 80, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 192, "y": 96, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 176, "y": 64, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 264, "y": 120, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 280, "y": 120, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 296, "y": 136, "width": 6, "height": 6},
+        {"name": "coin", "type": "coin", "x": 24, "y": 136, "width": 6, "height": 6}
+      ]
+    },
+    {
       "name": "Entities",
       "type": "objectgroup",
       "visible": true,

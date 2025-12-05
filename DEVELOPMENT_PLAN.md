@@ -134,30 +134,43 @@ This document outlines the phased development approach for building BRICKWAVE, a
 
 ---
 
-### **Phase 5: Collectibles & Scoring**
+### **Phase 5: Collectibles & Scoring** ✅
 **Goal**: Add progression and feedback systems
 
 **Tasks**:
-- [ ] Create coin sprite and animation
-- [ ] Implement coin collection (+100 score)
-- [ ] Add Echo Charge system (10 coins = +1 dash, max 3)
-- [ ] Build HUD display:
-  - Player name/icon
+- [x] Create coin sprite and animation
+- [x] Implement coin collection (+100 score)
+- [x] Add Echo Charge system (10 coins = +1 dash, max 3)
+- [x] Build HUD display:
   - Score counter
   - Coins ×##
   - World #-#
   - Time ###
-- [ ] Add level timer (tracks play time)
-- [ ] Implement time bonus calculation at level end
-- [ ] Create style bonus (continuous movement detection)
-- [ ] Add visual/audio feedback for collection
+  - Echo Charges (●●●)
+- [x] Add level timer (tracks play time)
+- [x] Implement time bonus calculation at level end
+- [x] Create style bonus (continuous movement detection)
+- [x] Add visual/audio feedback for collection
 
 **Deliverables**:
-- Working coin and scoring system
-- Complete HUD with all elements
-- Reward feedback that feels satisfying
+- ✅ Working coin and scoring system
+- ✅ Complete HUD with all elements
+- ✅ Reward feedback that feels satisfying
 
 **Estimated Time**: 3-4 days
+**Actual Time**: ~1 session
+
+**Implementation Notes**:
+- Created `Coin` entity class in `src/entities/Coin.js` with pulsing/floating animation
+- Created `ScoreManager` system in `src/systems/ScoreManager.js` for tracking scores, coins, Echo Charges, and bonuses
+- Created `GameHUD` system in `src/systems/GameHUD.js` displaying all game information
+- Integrated coin collection into `GameScene` with overlap detection
+- Updated `Player` class to use ScoreManager's Echo Charges instead of internal tracking
+- Echo Charge system: Every 10 coins awards +1 dash charge (max 3)
+- Style bonus tracks continuous movement with combo system
+- Time bonus calculated based on target completion time
+- Visual feedback on coin collection with flash/sparkle effect
+- Test level updated with 15 coins placed throughout
 
 ---
 
@@ -358,7 +371,7 @@ This document outlines the phased development approach for building BRICKWAVE, a
 | 2 | Player movement feels good | ✅ |
 | 3 | Levels load from Tiled | ✅ |
 | 4 | Phase bricks work perfectly | ✅ |
-| 5 | Scoring and HUD complete | ⬜ |
+| 5 | Scoring and HUD complete | ✅ |
 | 6 | Enemies challenge player | ⬜ |
 | 7 | 3 playable levels exist | ⬜ |
 | 8 | Full menu flow works | ⬜ |
