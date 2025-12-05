@@ -5,6 +5,7 @@
  * - Tracks current score
  * - Tracks coins collected
  * - Manages Echo Charges (10 coins = +1 dash, max 3)
+ * - Tracks Key Shards (3 per level)
  * - Tracks time bonuses
  * - Tracks style bonuses (continuous movement)
  * - Emits events for score/coin changes
@@ -19,6 +20,10 @@ export default class ScoreManager {
     this.echoCharges = 0;
     this.maxEchoCharges = 3;
     this.coinsPerCharge = 10;
+
+    // Key Shard tracking
+    this.keyShards = [false, false, false]; // 3 shards per level
+    this.totalKeyShards = 3;
 
     // Bonus tracking
     this.timeBonus = 0;
@@ -204,12 +209,53 @@ export default class ScoreManager {
   }
 
   /**
+   * Collect a Key Shard
+   * @param {number} shardIndex - Which shard (0, 1, or 2)
+   * @returns {boolean} True if shard was newly collected
+   */
+  collectKeyShard(shardIndex) {
+    if (shardIndex < 0 || shardIndex >= this.totalKeyShards) return false;
+    if (this.keyShards[shardIndex]) return false; // Already collected
+
+    this.keyShards[shardIndex] = true;
+    this.addScore(500); // Key shards are worth 500 points
+    this.scene.events.emit('keyShardCollected', shardIndex, this.getKeyShardCount());
+
+    return true;
+  }
+
+  /**
+   * Get number of key shards collected
+   * @returns {number} Count of collected shards
+   */
+  getKeyShardCount() {
+    return this.keyShards.filter(s => s).length;
+  }
+
+  /**
+   * Get key shard array
+   * @returns {boolean[]} Array of collected states
+   */
+  getKeyShards() {
+    return [...this.keyShards];
+  }
+
+  /**
+   * Check if all key shards are collected
+   * @returns {boolean} True if all shards collected
+   */
+  hasAllKeyShards() {
+    return this.keyShards.every(s => s);
+  }
+
+  /**
    * Reset all scoring data (for new level)
    */
   reset() {
     this.score = 0;
     this.coinsCollected = 0;
     this.echoCharges = 0;
+    this.keyShards = [false, false, false];
     this.timeBonus = 0;
     this.styleBonus = 0;
     this.styleBonusMultiplier = 1.0;

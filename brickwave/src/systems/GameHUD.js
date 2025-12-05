@@ -92,6 +92,16 @@ export default class GameHUD {
     this.echoChargesText.setOrigin(1, 0); // Right-aligned
     this.container.add(this.echoChargesText);
 
+    // Key Shards display (top right, below echo charges)
+    this.keyShardsText = this.scene.add.text(
+      gameWidth - padding,
+      padding + lineHeight * 2,
+      'KEYS ◇◇◇',
+      this.textStyle
+    );
+    this.keyShardsText.setOrigin(1, 0); // Right-aligned
+    this.container.add(this.keyShardsText);
+
     // Style bonus indicator (appears when active)
     this.styleBonusText = this.scene.add.text(
       gameWidth / 2,
@@ -141,6 +151,12 @@ export default class GameHUD {
     this.scene.events.on('styleBonusEnd', () => {
       this.hideStyleBonus();
     });
+
+    // Key shard collected
+    this.scene.events.on('keyShardCollected', (shardIndex, totalShards) => {
+      this.updateKeyShards();
+      this.flashKeyShards();
+    });
   }
 
   /**
@@ -181,6 +197,34 @@ export default class GameHUD {
   flashEchoCharges() {
     this.scene.tweens.add({
       targets: this.echoChargesText,
+      alpha: 0.3,
+      duration: 100,
+      yoyo: true,
+      repeat: 3
+    });
+  }
+
+  /**
+   * Update Key Shards display
+   */
+  updateKeyShards() {
+    const shards = this.scoreManager.getKeyShards();
+    let display = 'KEYS ';
+
+    // Show filled/empty diamonds for shards
+    for (let i = 0; i < shards.length; i++) {
+      display += shards[i] ? '◆' : '◇';
+    }
+
+    this.keyShardsText.setText(display);
+  }
+
+  /**
+   * Flash Key Shards display when collected
+   */
+  flashKeyShards() {
+    this.scene.tweens.add({
+      targets: this.keyShardsText,
       alpha: 0.3,
       duration: 100,
       yoyo: true,
