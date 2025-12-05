@@ -95,4 +95,13 @@ export const GAME_CONFIG = {
   COIN_VALUE: 100,
   COINS_PER_ECHO: 10,
   MAX_ECHO_CHARGES: 3,
+
+  // Enemy constants
+  ENEMY_SCORE: {
+    SKITTER: 50,
+    BLINKBAT: 75,
+    SENTRYORB: 100,
+  },
+  STOMP_BOUNCE_VELOCITY: -150,
+  ORB_BOUNCE_VELOCITY: -200,
 };

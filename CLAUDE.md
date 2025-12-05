@@ -4,7 +4,7 @@
 
 **BRICKWAVE** is a browser-based pixel platformer game inspired by 80s underground runners, featuring a unique "phase brick" mechanic where blocks toggle between solid and ghost states on a rhythmic cycle.
 
-**Current Status**: Phase 5 Complete - Collectibles & Scoring system fully implemented with coins, HUD, and Echo Charges, ready for Phase 6 (Enemies & Combat)
+**Current Status**: Phase 6 Complete - Enemies & Combat fully implemented with 3 enemy types (Skitter, BlinkBat, SentryOrb), stomp/dash combat mechanics, and EnemyManager system, ready for Phase 7 (Level Content)
 
 ## Key Information
 
@@ -80,8 +80,8 @@ The project follows a 10-phase plan outlined in `DEVELOPMENT_PLAN.md`:
 **Phase 3**: Level System & Tiles ✅
 **Phase 4**: Phase Bricks Mechanic ✅
 **Phase 5**: Collectibles & Scoring ✅
-**Phase 6**: Enemies & Combat ⭐ ⬜
-**Phase 7**: Level Content (World 1-1 to 1-3) ⬜
+**Phase 6**: Enemies & Combat ✅
+**Phase 7**: Level Content (World 1-1 to 1-3) ⭐ ⬜
 **Phase 8**: UI & Menus ⬜
 **Phase 9**: Persistence & Polish ⬜
 **Phase 10**: Accessibility & Final MVP ⬜
@@ -197,19 +197,25 @@ As of 2025-12-05:
 - ✅ **Phase 3 Complete**: Level system with Tiled JSON loader, tile collision, one-way platforms, camera system
 - ✅ **Phase 4 Complete**: Phase brick mechanic with timing system, visual feedback, HUD indicator, and phase groups
 - ✅ **Phase 5 Complete**: Collectibles & Scoring system with coins, HUD, Echo Charges, and bonus tracking
-- 🎯 **Next Up**: Phase 6 - Implement Enemies & Combat
+- ✅ **Phase 6 Complete**: Enemies & Combat with 3 enemy types, stomp/dash mechanics, EnemyManager system
+- 🎯 **Next Up**: Phase 7 - Build Level Content (World 1-1 to 1-3)
 
 **Key Files**:
 - `src/entities/Player.js` - Complete player movement system (integrated with ScoreManager)
 - `src/entities/PhaseBrick.js` - Phase brick with visual feedback and collision states
 - `src/entities/Coin.js` - Collectible coins with pulsing/floating animation
+- `src/entities/Enemy.js` - Base enemy class with combat mechanics
+- `src/entities/Skitter.js` - Ground beetle enemy (patrols, reverses at edges)
+- `src/entities/BlinkBat.js` - Phase-synced flying enemy (appears during ghost phase)
+- `src/entities/SentryOrb.js` - Floating patrol enemy (arc/circle patterns, bounceable)
 - `src/systems/LevelLoader.js` - Tiled map loader with multi-layer support (including Phase layer)
 - `src/systems/PhaseManager.js` - Phase timing and group management system
 - `src/systems/PhaseIndicator.js` - HUD element showing phase progress
 - `src/systems/ScoreManager.js` - Score, coins, Echo Charges, and bonus tracking
 - `src/systems/GameHUD.js` - Complete HUD display with all game information
-- `src/scenes/GameScene.js` - Main game scene with level loading, phase management, and coin collection
-- `assets/levels/test-level-1.json` - Test level with phase mechanics and coins
+- `src/systems/EnemyManager.js` - Enemy spawning and collision management
+- `src/scenes/GameScene.js` - Main game scene with all systems integrated
+- `assets/levels/test-level-1.json` - Test level with phase mechanics, coins, and enemies
 
 ## When Working on This Project
 
