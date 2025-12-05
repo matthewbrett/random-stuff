@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
 import Player from '../entities/Player.js';
 import Coin from '../entities/Coin.js';
+import KeyShard from '../entities/KeyShard.js';
+import LevelExit from '../entities/LevelExit.js';
 import LevelLoader from '../systems/LevelLoader.js';
 import PhaseManager from '../systems/PhaseManager.js';
 import PhaseIndicator from '../systems/PhaseIndicator.js';
@@ -22,8 +24,20 @@ export default class GameScene extends Phaser.Scene {
   preload() {
     console.log('🎮 GameScene: Preloading assets...');
 
-    // Load the test level
+    // Load all levels
+    this.load.json('level-1-1', '/assets/levels/level-1-1.json');
+    this.load.json('level-1-2', '/assets/levels/level-1-2.json');
+    this.load.json('level-1-3', '/assets/levels/level-1-3.json');
+
+    // Also load test level for backwards compatibility
     this.load.json('testLevel1', '/assets/levels/test-level-1.json');
+  }
+
+  init(data) {
+    // Level to load (default to 1-1)
+    this.currentWorld = data?.world || 1;
+    this.currentLevel = data?.level || 1;
+    this.levelKey = data?.levelKey || `level-${this.currentWorld}-${this.currentLevel}`;
   }
 
   create() {
@@ -38,9 +52,25 @@ export default class GameScene extends Phaser.Scene {
     // Create level loader
     this.levelLoader = new LevelLoader(this);
 
-    // Load the level
-    const levelData = this.cache.json.get('testLevel1');
+    // Load the specified level
+    let levelData = this.cache.json.get(this.levelKey);
+
+    // Fallback to test level if not found
+    if (!levelData) {
+      console.warn(`Level ${this.levelKey} not found, falling back to testLevel1`);
+      levelData = this.cache.json.get('testLevel1');
+      this.currentWorld = 1;
+      this.currentLevel = 1;
+    }
+
     const levelInfo = this.levelLoader.loadLevel(levelData);
+
+    // Get level properties
+    if (levelData.properties) {
+      this.targetTime = levelData.properties.targetTime || 90;
+    } else {
+      this.targetTime = 90;
+    }
 
     // Store collision groups for easy access
     this.platforms = levelInfo.collisionTiles;
@@ -66,12 +96,23 @@ export default class GameScene extends Phaser.Scene {
     this.coins = [];
     this.createCoins(levelData);
 
+    // Create key shards
+    this.keyShards = [];
+    this.createKeyShards(levelData);
+
+    // Create level exit
+    this.levelExit = null;
+    this.createLevelExit(levelData);
+
     // Setup coin collision
     this.setupCoinCollision();
 
     // Create enemy manager and spawn enemies
     this.enemyManager = new EnemyManager(this);
     this.enemyManager.spawnFromLevel(levelData);
+
+    // Level completion state
+    this.levelComplete = false;
 
     // Setup camera with level boundaries
     this.cameras.main.setBounds(0, 0, levelInfo.width, levelInfo.height);
@@ -90,7 +131,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Create HUD
     this.hud = new GameHUD(this, this.scoreManager);
-    this.hud.setWorld(1, 1); // World 1-1
+    this.hud.setWorld(this.currentWorld, this.currentLevel);
 
     // Start level timer
     this.scoreManager.startTimer();
@@ -153,6 +194,58 @@ export default class GameScene extends Phaser.Scene {
     // We'll do this in update() using overlap detection
   }
 
+  /**
+   * Create key shards from level data
+   * @param {object} levelData - Level JSON data
+   */
+  createKeyShards(levelData) {
+    // Look for a "KeyShards" or "Secrets" layer in the level data
+    const shardsLayer = levelData.layers.find(
+      layer => layer.name === 'KeyShards' || layer.name === 'Secrets'
+    );
+
+    if (shardsLayer && shardsLayer.objects) {
+      let shardIndex = 0;
+      shardsLayer.objects.forEach(obj => {
+        if (obj.name === 'keyshard' || obj.type === 'keyshard') {
+          const shard = new KeyShard(
+            this,
+            (obj.x + obj.width / 2) * SCALE,
+            (obj.y + obj.height / 2) * SCALE,
+            shardIndex
+          );
+          this.keyShards.push(shard);
+          shardIndex++;
+        }
+      });
+    }
+  }
+
+  /**
+   * Create level exit from level data
+   * @param {object} levelData - Level JSON data
+   */
+  createLevelExit(levelData) {
+    // Look for exit in the Entities layer
+    const entitiesLayer = levelData.layers.find(
+      layer => layer.name === 'Entities'
+    );
+
+    if (entitiesLayer && entitiesLayer.objects) {
+      const exitObj = entitiesLayer.objects.find(
+        obj => obj.name === 'exit' || obj.type === 'exit'
+      );
+
+      if (exitObj) {
+        this.levelExit = new LevelExit(
+          this,
+          (exitObj.x + exitObj.width / 2) * SCALE,
+          (exitObj.y + exitObj.height) * SCALE
+        );
+      }
+    }
+  }
+
   update(time, delta) {
     // Update score manager timer
     if (this.scoreManager) {
@@ -183,17 +276,35 @@ export default class GameScene extends Phaser.Scene {
       });
     }
 
+    // Update key shards
+    if (this.keyShards) {
+      this.keyShards.forEach(shard => {
+        shard.update(time, delta);
+      });
+    }
+
+    // Update level exit
+    if (this.levelExit) {
+      this.levelExit.update(time, delta);
+    }
+
     // Update enemies
     if (this.enemyManager) {
       this.enemyManager.update(time, delta);
     }
 
     // Update player
-    if (this.player) {
+    if (this.player && !this.levelComplete) {
       this.player.update(time, delta);
 
       // Check coin collection
       this.checkCoinCollection();
+
+      // Check key shard collection
+      this.checkKeyShardCollection();
+
+      // Check level exit
+      this.checkLevelExit();
 
       // Check enemy collision
       this.checkEnemyCollision();
@@ -241,6 +352,84 @@ export default class GameScene extends Phaser.Scene {
         this.coins.splice(index, 1);
       }
     });
+  }
+
+  /**
+   * Check if player has collected any key shards
+   */
+  checkKeyShardCollection() {
+    const playerBounds = this.player.sprite.getBounds();
+
+    this.keyShards.forEach((shard, index) => {
+      if (!shard.collected && shard.overlaps(playerBounds.x, playerBounds.y, playerBounds.width, playerBounds.height)) {
+        // Collect the shard
+        const shardIndex = shard.collect();
+        if (shardIndex >= 0) {
+          this.scoreManager.collectKeyShard(shardIndex);
+        }
+
+        // Remove from array
+        this.keyShards.splice(index, 1);
+      }
+    });
+  }
+
+  /**
+   * Check if player has reached the level exit
+   */
+  checkLevelExit() {
+    if (!this.levelExit || this.levelComplete) return;
+
+    const playerBounds = this.player.sprite.getBounds();
+
+    // Check if player is near exit (for visual feedback)
+    const distance = Phaser.Math.Distance.Between(
+      this.player.sprite.x, this.player.sprite.y,
+      this.levelExit.sprite.x, this.levelExit.sprite.y
+    );
+    this.levelExit.setPlayerNearby(distance < 40 * SCALE);
+
+    // Check if player overlaps exit
+    if (this.levelExit.overlaps(playerBounds.x, playerBounds.y, playerBounds.width, playerBounds.height)) {
+      this.completLevel();
+    }
+  }
+
+  /**
+   * Complete the level
+   */
+  completLevel() {
+    if (this.levelComplete) return;
+
+    this.levelComplete = true;
+
+    // Stop timer
+    this.scoreManager.stopTimer();
+
+    // Calculate time bonus using level's target time
+    this.scoreManager.calculateTimeBonus(this.targetTime);
+
+    // Trigger exit effect
+    if (this.levelExit) {
+      this.levelExit.trigger();
+    }
+
+    // Stop player movement
+    if (this.player) {
+      this.player.sprite.body.setVelocity(0, 0);
+    }
+
+    // Show level complete HUD
+    this.time.delayedCall(1000, () => {
+      if (this.hud) {
+        this.hud.showLevelComplete();
+      }
+    });
+
+    console.log('🎉 Level Complete!');
+    console.log(`World ${this.currentWorld}-${this.currentLevel} completed!`);
+    console.log(`Time: ${this.scoreManager.getFormattedTime()}`);
+    console.log(`Key Shards: ${this.scoreManager.getKeyShardCount()}/3`);
   }
 
   /**
