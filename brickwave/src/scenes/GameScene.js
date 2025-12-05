@@ -76,17 +76,14 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupPhaseBrickCollision() {
-    // Add collision between player and each phase brick
-    // We need to handle each brick individually because they can phase independently
-    this.phaseBricks.forEach(brick => {
+    // Set up individual colliders for each phase brick
+    // We need per-brick collision callbacks to check phase state
+    this.phaseBricks.forEach(phaseBrick => {
       this.physics.add.collider(
         this.player.sprite,
-        brick.body,
+        phaseBrick.brick,
         null,
-        () => {
-          // Only collide if the brick is solid
-          return brick.isSolid();
-        },
+        () => phaseBrick.isSolid(), // Only collide if brick is solid
         this
       );
     });

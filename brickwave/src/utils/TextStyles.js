@@ -84,8 +84,8 @@ export const TextStyles = {
 export function createSmoothText(scene, x, y, content, style = TextStyles.subtitle) {
   const text = scene.add.text(x, y, content, style);
 
-  // Force smooth rendering for this text object
-  text.setRoundPixels(false);
+  // Text objects don't have setRoundPixels, and will use smooth rendering by default
+  // when resolution is set higher in the style
 
   return text;
 }

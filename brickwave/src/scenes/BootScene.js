@@ -43,7 +43,11 @@ export default class BootScene extends Phaser.Scene {
 
     // Setup input
     this.input.keyboard.once('keydown-SPACE', () => {
-      console.log('🎮 BootScene: Space pressed - transitioning to GameScene!');
+      this.scene.start('GameScene');
+    });
+
+    // Auto-start after 1 second for easier development
+    this.time.delayedCall(1000, () => {
       this.scene.start('GameScene');
     });
 

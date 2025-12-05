@@ -114,9 +114,9 @@ export default class LevelLoader {
       const phaseBrick = new PhaseBrick(this.scene, x, y, this.tileSize, groupId);
       this.phaseBricks.push(phaseBrick);
 
-      // Add to layer group
+      // Add brick visual to layer group (no longer using container)
       if (this.layers[layer.name]) {
-        this.layers[layer.name].add(phaseBrick.container);
+        this.layers[layer.name].add(phaseBrick.brick);
       }
 
       return phaseBrick;

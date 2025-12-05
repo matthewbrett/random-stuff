@@ -21,26 +21,21 @@ export default class PhaseBrick {
     // Current phase state
     this.phaseState = PhaseState.SOLID;
 
-    // Visual elements
-    this.container = scene.add.container(x, y);
-
-    // Main brick visual (rectangle for now, can be replaced with sprite)
+    // Main brick visual - positioned directly at (x, y), NOT in a container
     this.solidColor = 0x3b82f6; // Blue color for phase bricks
     this.ghostColor = 0x1e40af; // Darker blue for ghost state
 
-    this.brick = scene.add.rectangle(0, 0, tileSize, tileSize, this.solidColor);
+    // Create brick rectangle at world position (x, y)
+    this.brick = scene.add.rectangle(x, y, tileSize, tileSize, this.solidColor);
     this.brick.setStrokeStyle(1, 0x1e3a8a, 0.5);
-    this.container.add(this.brick);
 
     // Shimmer overlay for visual feedback
-    this.shimmer = scene.add.rectangle(0, 0, tileSize, tileSize, 0xffffff);
+    this.shimmer = scene.add.rectangle(x, y, tileSize, tileSize, 0xffffff);
     this.shimmer.setAlpha(0);
-    this.container.add(this.shimmer);
 
     // Physics body for collision (starts as solid)
-    this.body = scene.physics.add.existing(this.brick, true); // true = static body
-    this.body.body.setSize(tileSize, tileSize);
-    this.body.body.setOffset(-tileSize / 2, -tileSize / 2);
+    // The brick is already at world position (x, y), so physics body will be there too
+    scene.physics.add.existing(this.brick, true); // true = static body
 
     // Animation state
     this.shimmerTime = 0;
@@ -48,7 +43,8 @@ export default class PhaseBrick {
     this.transitionTime = 0;
     this.transitionDuration = 300; // ms for phase transition
 
-    console.log(`🧱 PhaseBrick: Created at (${x}, ${y}) in group ${groupId}`);
+    // Debug logging disabled for cleaner console
+    // console.log(`🧱 PhaseBrick: Created at (${x}, ${y}) in group ${groupId}`);
   }
 
   /**
@@ -61,16 +57,8 @@ export default class PhaseBrick {
     this.phaseState = newState;
     this.transitionTime = 0;
 
-    // Update collision state
-    if (newState === PhaseState.SOLID) {
-      // Enable collision
-      this.body.body.enable = true;
-      console.log(`🧱 PhaseBrick at (${this.x}, ${this.y}): Now SOLID`);
-    } else {
-      // Disable collision (ghost state)
-      this.body.body.enable = false;
-      console.log(`🧱 PhaseBrick at (${this.x}, ${this.y}): Now GHOST`);
-    }
+    // Don't disable the body - let the collision process callback handle whether to collide
+    // The body must remain enabled for Phaser to check collisions
 
     // Trigger visual transition
     this.onPhaseChange(oldState, newState);
@@ -140,7 +128,7 @@ export default class PhaseBrick {
    * Get the physics body for collision
    */
   getBody() {
-    return this.body.body;
+    return this.brick.body;
   }
 
   /**
@@ -168,11 +156,11 @@ export default class PhaseBrick {
    * Destroy the brick
    */
   destroy() {
-    if (this.container) {
-      this.container.destroy();
+    if (this.brick) {
+      this.brick.destroy();
     }
-    if (this.body) {
-      this.body.destroy();
+    if (this.shimmer) {
+      this.shimmer.destroy();
     }
   }
 }
