@@ -4,6 +4,7 @@ import Player from '../entities/Player.js';
 import LevelLoader from '../systems/LevelLoader.js';
 import PhaseManager from '../systems/PhaseManager.js';
 import PhaseIndicator from '../systems/PhaseIndicator.js';
+import { TextStyles, createSmoothText } from '../utils/TextStyles.js';
 
 /**
  * GameScene - Main gameplay scene
@@ -69,13 +70,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // Add debug text
-    this.debugText = this.add.text(10, 10, '', {
-      fontFamily: 'monospace',
-      fontSize: '6px',
-      color: '#ffffff',
-      backgroundColor: '#000000',
-      padding: { x: 4, y: 2 }
-    });
+    this.debugText = createSmoothText(this, 10, 10, '', TextStyles.debug);
     this.debugText.setScrollFactor(0);
     this.debugText.setDepth(1000);
   }

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config.js';
+import { TextStyles, createCenteredText, createSmoothText } from '../utils/TextStyles.js';
 
 /**
  * BootScene - Initial loading and setup scene
@@ -23,31 +24,13 @@ export default class BootScene extends Phaser.Scene {
     const centerY = GAME_CONFIG.GAME_HEIGHT / 2;
 
     // Title text
-    const titleText = this.add.text(centerX, centerY - 20, 'BRICKWAVE', {
-      fontFamily: 'monospace',
-      fontSize: '24px',
-      color: '#00ffff',
-      align: 'center',
-    });
-    titleText.setOrigin(0.5);
+    const titleText = createCenteredText(this, centerX, centerY - 20, 'BRICKWAVE', TextStyles.title);
 
     // Subtitle
-    const subtitleText = this.add.text(centerX, centerY + 10, 'Phase 1: Setup Complete', {
-      fontFamily: 'monospace',
-      fontSize: '8px',
-      color: '#ffffff',
-      align: 'center',
-    });
-    subtitleText.setOrigin(0.5);
+    const subtitleText = createCenteredText(this, centerX, centerY + 10, 'Phase 1: Setup Complete', TextStyles.subtitle);
 
     // Version info
-    const versionText = this.add.text(centerX, centerY + 30, 'Press SPACE to continue', {
-      fontFamily: 'monospace',
-      fontSize: '6px',
-      color: '#888888',
-      align: 'center',
-    });
-    versionText.setOrigin(0.5);
+    const versionText = createCenteredText(this, centerX, centerY + 30, 'Press SPACE to continue', TextStyles.hint);
 
     // Add a pulsing effect to the continue text
     this.tweens.add({
@@ -75,10 +58,10 @@ export default class BootScene extends Phaser.Scene {
       `Physics: Arcade (${GAME_CONFIG.GRAVITY} gravity)`,
     ];
 
-    const debugText = this.add.text(10, 10, debugInfo.join('\n'), {
-      fontFamily: 'monospace',
-      fontSize: '6px',
+    const debugText = createSmoothText(this, 10, 10, debugInfo.join('\n'), {
+      ...TextStyles.debug,
       color: '#666666',
+      backgroundColor: 'transparent',
     });
   }
 
