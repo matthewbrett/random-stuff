@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
+import GameScene from './scenes/GameScene.js';
 
 // Game configuration
 export const config = {
@@ -29,7 +30,7 @@ export const config = {
     default: 'arcade',
     arcade: {
       gravity: { y: 800 },
-      debug: false, // Set to true during development
+      debug: true, // Set to true during development
       fps: 60,
       fixedStep: true,
       timeScale: 1,
@@ -39,6 +40,7 @@ export const config = {
   // Scenes
   scene: [
     BootScene,
+    GameScene,
   ],
 
   // Background color (catacomb blue-ish)
