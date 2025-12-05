@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config.js';
 import Player from '../entities/Player.js';
+import LevelLoader from '../systems/LevelLoader.js';
 
 /**
  * GameScene - Main gameplay scene
@@ -12,21 +13,34 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    // TODO: Load game assets
     console.log('🎮 GameScene: Preloading assets...');
+
+    // Load the test level
+    this.load.json('testLevel1', '/assets/levels/test-level-1.json');
   }
 
   create() {
     console.log('🎮 GameScene: Initializing...');
 
-    // Create a simple ground platform for testing
-    this.createTestLevel();
+    // Create level loader
+    this.levelLoader = new LevelLoader(this);
+
+    // Load the level
+    const levelData = this.cache.json.get('testLevel1');
+    const levelInfo = this.levelLoader.loadLevel(levelData);
+
+    // Store collision groups for easy access
+    this.platforms = levelInfo.collisionTiles;
+    this.oneWayPlatforms = levelInfo.oneWayPlatforms;
+
+    // Get player spawn point from level
+    const spawnPoint = this.levelLoader.getSpawnPoint('player');
 
     // Create the player
-    this.player = new Player(this, 160, 100);
+    this.player = new Player(this, spawnPoint.x, spawnPoint.y);
 
-    // Setup camera
-    this.cameras.main.setBounds(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
+    // Setup camera with level boundaries
+    this.cameras.main.setBounds(0, 0, levelInfo.width, levelInfo.height);
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
 
     // Add debug text
@@ -39,32 +53,6 @@ export default class GameScene extends Phaser.Scene {
     });
     this.debugText.setScrollFactor(0);
     this.debugText.setDepth(1000);
-  }
-
-  createTestLevel() {
-    // Create a physics group for platforms
-    this.platforms = this.physics.add.staticGroup();
-
-    // Ground platform
-    const groundY = 160;
-    for (let x = 0; x < GAME_CONFIG.GAME_WIDTH; x += 16) {
-      const platform = this.add.rectangle(x, groundY, 16, 8, 0x4a5568);
-      this.platforms.add(platform);
-    }
-
-    // Some floating platforms for testing jumps
-    this.addPlatform(80, 120, 48, 8);
-    this.addPlatform(200, 100, 48, 8);
-    this.addPlatform(140, 80, 32, 8);
-
-    // Refresh the static body bounds
-    this.platforms.refresh();
-  }
-
-  addPlatform(x, y, width, height) {
-    const platform = this.add.rectangle(x, y, width, height, 0x64748b);
-    this.platforms.add(platform);
-    return platform;
   }
 
   update(time, delta) {

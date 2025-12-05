@@ -100,8 +100,42 @@ export default class Player {
   }
 
   setupCollision() {
-    // Add collision with platforms
+    // Add collision with solid platforms
     this.scene.physics.add.collider(this.sprite, this.scene.platforms);
+
+    // Add collision with one-way platforms (only when falling from above)
+    if (this.scene.oneWayPlatforms) {
+      this.oneWayCollider = this.scene.physics.add.collider(
+        this.sprite,
+        this.scene.oneWayPlatforms,
+        null,
+        this.checkOneWayCollision,
+        this
+      );
+    }
+  }
+
+  /**
+   * Check if player should collide with one-way platform
+   * Only collide if:
+   * - Player is moving downward
+   * - Player's bottom edge is above or at the platform's top edge
+   * - Player is not pressing down (for drop-through)
+   */
+  checkOneWayCollision(player, platform) {
+    const playerBottom = player.body.y + player.body.height;
+    const platformTop = platform.body.y;
+    const isMovingDown = player.body.velocity.y >= 0;
+    const isAbovePlatform = player.body.prev.y + player.body.height <= platformTop + 4;
+
+    // Allow drop-through when pressing down
+    const pressingDown = this.cursors.down.isDown || this.keys.down.isDown;
+    if (pressingDown && this.isGrounded && isAbovePlatform) {
+      return false;
+    }
+
+    // Only collide if player is falling from above
+    return isMovingDown && isAbovePlatform;
   }
 
   update(time, delta) {
@@ -256,8 +290,7 @@ export default class Player {
 
     this.isCrouching = downPressed && this.isGrounded;
 
-    // TODO: Implement drop-through for one-way platforms
-    // This will be implemented when we add one-way platforms in Phase 3
+    // Drop-through is handled in checkOneWayCollision()
   }
 
   applyFriction(delta) {
