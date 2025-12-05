@@ -1,0 +1,259 @@
+import Phaser from 'phaser';
+
+/**
+ * Enemy - Base class for all enemies
+ *
+ * Features:
+ * - Common movement and collision behaviors
+ * - Stomp and dash-to-tag combat mechanics
+ * - Death animation and feedback
+ * - Subclasses implement specific behaviors
+ */
+
+export const EnemyState = {
+  ACTIVE: 'active',
+  DYING: 'dying',
+  DEAD: 'dead',
+};
+
+export default class Enemy {
+  constructor(scene, x, y, config = {}) {
+    this.scene = scene;
+    this.x = x;
+    this.y = y;
+
+    // Configuration with defaults
+    this.config = {
+      width: 8,
+      height: 8,
+      color: 0xff0000,
+      speed: 30,
+      canBeStopped: true,
+      canBeDashed: true,
+      scoreValue: 50,
+      ...config
+    };
+
+    // State
+    this.state = EnemyState.ACTIVE;
+    this.facing = 1; // 1 = right, -1 = left
+
+    // Create sprite (subclasses should override createSprite for custom visuals)
+    this.createSprite();
+
+    // Physics setup
+    this.setupPhysics();
+  }
+
+  /**
+   * Create the enemy sprite
+   * Override in subclasses for custom visuals
+   */
+  createSprite() {
+    this.sprite = this.scene.physics.add.sprite(this.x, this.y, null);
+
+    // Generate a default texture if needed
+    const textureKey = `enemy_${this.config.color.toString(16)}`;
+    if (!this.scene.textures.exists(textureKey)) {
+      const graphics = this.scene.add.graphics();
+      graphics.fillStyle(this.config.color, 1);
+      graphics.fillRect(0, 0, this.config.width, this.config.height);
+      graphics.generateTexture(textureKey, this.config.width, this.config.height);
+      graphics.destroy();
+    }
+
+    this.sprite.setTexture(textureKey);
+    this.sprite.setOrigin(0.5, 0.5);
+  }
+
+  /**
+   * Setup physics properties
+   */
+  setupPhysics() {
+    this.sprite.body.setSize(this.config.width, this.config.height);
+    this.sprite.body.setAllowGravity(true);
+    this.sprite.body.setImmovable(false);
+    this.sprite.body.setBounce(0, 0);
+  }
+
+  /**
+   * Update the enemy - called every frame
+   * Override in subclasses for specific behaviors
+   */
+  update(time, delta) {
+    if (this.state !== EnemyState.ACTIVE) return;
+
+    // Default behavior: basic movement
+    this.updateMovement(time, delta);
+  }
+
+  /**
+   * Update movement - override in subclasses
+   */
+  updateMovement(time, delta) {
+    // Default: move in facing direction
+    this.sprite.body.setVelocityX(this.config.speed * this.facing);
+  }
+
+  /**
+   * Check if player stomped this enemy (hit from above)
+   * @param {Player} player - The player object
+   * @returns {boolean} True if stomped
+   */
+  checkStomp(player) {
+    if (this.state !== EnemyState.ACTIVE || !this.config.canBeStopped) return false;
+
+    const playerSprite = player.sprite;
+    const enemySprite = this.sprite;
+
+    // Check if player is above enemy and moving downward
+    const playerBottom = playerSprite.body.y + playerSprite.body.height;
+    const enemyTop = enemySprite.body.y;
+    const isAbove = playerBottom <= enemyTop + 6; // Small tolerance
+    const isFalling = playerSprite.body.velocity.y > 0;
+
+    return isAbove && isFalling;
+  }
+
+  /**
+   * Check if player dashed into this enemy
+   * @param {Player} player - The player object
+   * @returns {boolean} True if dashed
+   */
+  checkDash(player) {
+    if (this.state !== EnemyState.ACTIVE || !this.config.canBeDashed) return false;
+
+    return player.isDashing;
+  }
+
+  /**
+   * Handle being stomped by player
+   * @param {Player} player - The player who stomped
+   */
+  onStomp(player) {
+    this.die();
+
+    // Bounce the player up after stomp
+    player.sprite.body.setVelocityY(-150);
+
+    console.log(`👟 Enemy stomped! +${this.config.scoreValue}`);
+  }
+
+  /**
+   * Handle being dashed by player
+   * @param {Player} player - The player who dashed
+   */
+  onDash(player) {
+    this.die();
+
+    console.log(`💨 Enemy dashed! +${this.config.scoreValue}`);
+  }
+
+  /**
+   * Handle collision with player (player takes damage)
+   * @param {Player} player - The player object
+   */
+  onPlayerCollision(player) {
+    // TODO: Implement player damage/death in later phase
+    console.log('💥 Player hit by enemy!');
+  }
+
+  /**
+   * Kill this enemy
+   */
+  die() {
+    if (this.state !== EnemyState.ACTIVE) return;
+
+    this.state = EnemyState.DYING;
+    this.sprite.body.setVelocity(0, 0);
+    this.sprite.body.setAllowGravity(false);
+
+    // Play death animation
+    this.playDeathAnimation();
+  }
+
+  /**
+   * Play death animation
+   */
+  playDeathAnimation() {
+    // Squash and fade effect
+    this.scene.tweens.add({
+      targets: this.sprite,
+      scaleY: 0.2,
+      scaleX: 1.5,
+      alpha: 0,
+      duration: 200,
+      ease: 'Power2',
+      onComplete: () => {
+        this.state = EnemyState.DEAD;
+        this.createDeathParticles();
+        this.destroy();
+      }
+    });
+  }
+
+  /**
+   * Create death particle effect
+   */
+  createDeathParticles() {
+    // Simple particle burst
+    for (let i = 0; i < 4; i++) {
+      const particle = this.scene.add.graphics();
+      particle.fillStyle(this.config.color, 1);
+      particle.fillRect(-2, -2, 4, 4);
+      particle.x = this.sprite.x;
+      particle.y = this.sprite.y;
+
+      const angle = (i / 4) * Math.PI * 2;
+      const speed = 50;
+
+      this.scene.tweens.add({
+        targets: particle,
+        x: particle.x + Math.cos(angle) * 20,
+        y: particle.y + Math.sin(angle) * 20,
+        alpha: 0,
+        duration: 300,
+        ease: 'Power2',
+        onComplete: () => particle.destroy()
+      });
+    }
+  }
+
+  /**
+   * Get score value for killing this enemy
+   */
+  getScoreValue() {
+    return this.config.scoreValue;
+  }
+
+  /**
+   * Check if enemy is active
+   */
+  isActive() {
+    return this.state === EnemyState.ACTIVE;
+  }
+
+  /**
+   * Check if enemy is dead
+   */
+  isDead() {
+    return this.state === EnemyState.DEAD;
+  }
+
+  /**
+   * Get bounds for collision checking
+   */
+  getBounds() {
+    return this.sprite.getBounds();
+  }
+
+  /**
+   * Destroy this enemy
+   */
+  destroy() {
+    if (this.sprite) {
+      this.sprite.destroy();
+      this.sprite = null;
+    }
+  }
+}

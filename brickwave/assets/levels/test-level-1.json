@@ -177,6 +177,75 @@
           "height": 8
         }
       ]
+    },
+    {
+      "name": "Enemies",
+      "type": "objectgroup",
+      "visible": true,
+      "opacity": 1,
+      "objects": [
+        {
+          "name": "skitter",
+          "type": "skitter",
+          "x": 120,
+          "y": 160,
+          "width": 8,
+          "height": 6
+        },
+        {
+          "name": "skitter",
+          "type": "skitter",
+          "x": 200,
+          "y": 160,
+          "width": 8,
+          "height": 6
+        },
+        {
+          "name": "blinkbat",
+          "type": "blinkbat",
+          "x": 168,
+          "y": 72,
+          "width": 8,
+          "height": 6,
+          "properties": [
+            {"name": "phaseGroup", "type": "int", "value": 0}
+          ]
+        },
+        {
+          "name": "sentryorb",
+          "type": "sentryorb",
+          "x": 260,
+          "y": 100,
+          "width": 8,
+          "height": 8,
+          "properties": [
+            {"name": "orbitType", "type": "string", "value": "arc"},
+            {"name": "orbitRadiusX", "type": "int", "value": 24},
+            {"name": "orbitRadiusY", "type": "int", "value": 12}
+          ]
+        },
+        {
+          "name": "skitter",
+          "type": "skitter",
+          "x": 96,
+          "y": 88,
+          "width": 8,
+          "height": 6
+        },
+        {
+          "name": "sentryorb",
+          "type": "sentryorb",
+          "x": 144,
+          "y": 50,
+          "width": 8,
+          "height": 8,
+          "properties": [
+            {"name": "orbitType", "type": "string", "value": "circle"},
+            {"name": "orbitRadiusX", "type": "int", "value": 16},
+            {"name": "orbitRadiusY", "type": "int", "value": 16}
+          ]
+        }
+      ]
     }
   ]
 }

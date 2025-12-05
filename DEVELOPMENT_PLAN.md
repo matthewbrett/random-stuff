@@ -174,32 +174,44 @@ This document outlines the phased development approach for building BRICKWAVE, a
 
 ---
 
-### **Phase 6: Enemies & Combat**
+### **Phase 6: Enemies & Combat** ✅
 **Goal**: Add challenge and variety
 
 **Tasks**:
-- [ ] Create Enemy base class with common behaviors
-- [ ] Implement Skitter (beetle ground enemy):
+- [x] Create Enemy base class with common behaviors
+- [x] Implement Skitter (beetle ground enemy):
   - Patrols back and forth
   - Reverses at edges
   - Can be stomped
-- [ ] Add Blink Bat (phase-based enemy):
+- [x] Add Blink Bat (phase-based enemy):
   - Only appears during "ghost" phase windows
   - Simple flying pattern
-- [ ] Implement Sentry Orb (patrol enemy):
+- [x] Implement Sentry Orb (patrol enemy):
   - Moves in short arcs
   - Bounceable
-- [ ] Add stomp/bounce combat mechanic
-- [ ] Implement dash-to-tag for lighter enemies
-- [ ] Add enemy death animations and feedback
-- [ ] Create enemy spawn system from Tiled entities layer
+- [x] Add stomp/bounce combat mechanic
+- [x] Implement dash-to-tag for lighter enemies
+- [x] Add enemy death animations and feedback
+- [x] Create enemy spawn system from Tiled entities layer
 
 **Deliverables**:
-- At least 3 working enemy types
-- Satisfying combat feel (stomp bounce)
-- Enemy patterns are readable and fair
+- ✅ At least 3 working enemy types
+- ✅ Satisfying combat feel (stomp bounce)
+- ✅ Enemy patterns are readable and fair
 
 **Estimated Time**: 4-5 days
+**Actual Time**: ~1 session
+
+**Implementation Notes**:
+- Created `Enemy` base class in `src/entities/Enemy.js` with common behaviors (movement, combat, death)
+- Created `Skitter` ground enemy in `src/entities/Skitter.js` (patrols, edge detection, beetle visual)
+- Created `BlinkBat` phase-synced enemy in `src/entities/BlinkBat.js` (appears during ghost phase, flying pattern)
+- Created `SentryOrb` patrol enemy in `src/entities/SentryOrb.js` (arc/circle/figure-8 patterns, glowing visual)
+- Created `EnemyManager` system in `src/systems/EnemyManager.js` for spawning and collision management
+- Stomp mechanic bounces player and kills enemy with satisfying death animation
+- Dash attack kills enemies with different visual feedback
+- Enemies spawn from "Enemies" object layer in Tiled JSON
+- Test level updated with all 3 enemy types demonstrating behaviors
 
 ---
 
@@ -372,7 +384,7 @@ This document outlines the phased development approach for building BRICKWAVE, a
 | 3 | Levels load from Tiled | ✅ |
 | 4 | Phase bricks work perfectly | ✅ |
 | 5 | Scoring and HUD complete | ✅ |
-| 6 | Enemies challenge player | ⬜ |
+| 6 | Enemies challenge player | ✅ |
 | 7 | 3 playable levels exist | ⬜ |
 | 8 | Full menu flow works | ⬜ |
 | 9 | Audio and saves work | ⬜ |

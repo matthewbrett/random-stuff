@@ -7,6 +7,7 @@ import PhaseManager from '../systems/PhaseManager.js';
 import PhaseIndicator from '../systems/PhaseIndicator.js';
 import ScoreManager from '../systems/ScoreManager.js';
 import GameHUD from '../systems/GameHUD.js';
+import EnemyManager from '../systems/EnemyManager.js';
 import { TextStyles, createSmoothText } from '../utils/TextStyles.js';
 
 /**
@@ -67,6 +68,10 @@ export default class GameScene extends Phaser.Scene {
 
     // Setup coin collision
     this.setupCoinCollision();
+
+    // Create enemy manager and spawn enemies
+    this.enemyManager = new EnemyManager(this);
+    this.enemyManager.spawnFromLevel(levelData);
 
     // Setup camera with level boundaries
     this.cameras.main.setBounds(0, 0, levelInfo.width, levelInfo.height);
@@ -178,12 +183,20 @@ export default class GameScene extends Phaser.Scene {
       });
     }
 
+    // Update enemies
+    if (this.enemyManager) {
+      this.enemyManager.update(time, delta);
+    }
+
     // Update player
     if (this.player) {
       this.player.update(time, delta);
 
       // Check coin collection
       this.checkCoinCollection();
+
+      // Check enemy collision
+      this.checkEnemyCollision();
 
       // Update style bonus based on player movement
       const isMoving = Math.abs(this.player.sprite.body.velocity.x) > 10 ||
@@ -228,5 +241,43 @@ export default class GameScene extends Phaser.Scene {
         this.coins.splice(index, 1);
       }
     });
+  }
+
+  /**
+   * Check for player collision with enemies
+   */
+  checkEnemyCollision() {
+    if (!this.enemyManager || !this.player) return;
+
+    const result = this.enemyManager.checkPlayerCollision(this.player);
+
+    if (result.hit) {
+      // Award score for defeated enemies
+      if (result.score > 0) {
+        this.scoreManager.addScore(result.score);
+      }
+
+      // Handle player damage
+      if (result.damaged) {
+        this.onPlayerDamaged();
+      }
+    }
+  }
+
+  /**
+   * Handle player taking damage
+   */
+  onPlayerDamaged() {
+    // Flash the player red
+    this.player.sprite.setTint(0xff0000);
+
+    this.time.delayedCall(200, () => {
+      if (this.player && this.player.sprite) {
+        this.player.sprite.clearTint();
+      }
+    });
+
+    // TODO: Implement player health/death system in a later phase
+    console.log('💔 Player damaged!');
   }
 }
