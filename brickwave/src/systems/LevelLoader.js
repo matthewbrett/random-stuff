@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config.js';
+import PhaseBrick from '../entities/PhaseBrick.js';
 
 /**
  * LevelLoader - Handles loading and parsing Tiled JSON maps
  *
  * Supports:
- * - Multiple tile layers (Background, Solid, One-Way, Foreground)
+ * - Multiple tile layers (Background, Solid, One-Way, Foreground, Phase)
  * - Solid tile collision
  * - One-way platforms
+ * - Phase bricks with timing system
  * - Entity spawning from object layers
  */
 export default class LevelLoader {
@@ -17,6 +19,7 @@ export default class LevelLoader {
     this.layers = {};
     this.collisionTiles = null;
     this.oneWayPlatforms = null;
+    this.phaseBricks = []; // Array of phase brick instances
   }
 
   /**
@@ -36,6 +39,7 @@ export default class LevelLoader {
     // Create collision groups
     this.collisionTiles = this.scene.physics.add.staticGroup();
     this.oneWayPlatforms = this.scene.physics.add.staticGroup();
+    this.phaseBricks = []; // Reset phase bricks array
 
     // Process each layer
     levelData.layers.forEach(layer => {
@@ -60,6 +64,7 @@ export default class LevelLoader {
       height: this.levelHeight,
       collisionTiles: this.collisionTiles,
       oneWayPlatforms: this.oneWayPlatforms,
+      phaseBricks: this.phaseBricks,
     };
   }
 
@@ -99,6 +104,25 @@ export default class LevelLoader {
    * Create a single tile
    */
   createTile(x, y, tileId, layerType, layer) {
+    // Handle phase bricks differently
+    if (layerType === 'phase') {
+      // Determine phase group from tile ID (tileId - 1) allows different groups
+      // tileId 1 = group 0, tileId 2 = group 1, etc.
+      const groupId = (tileId - 1) % 4; // Support up to 4 groups for now
+
+      // Create a phase brick
+      const phaseBrick = new PhaseBrick(this.scene, x, y, this.tileSize, groupId);
+      this.phaseBricks.push(phaseBrick);
+
+      // Add to layer group
+      if (this.layers[layer.name]) {
+        this.layers[layer.name].add(phaseBrick.container);
+      }
+
+      return phaseBrick;
+    }
+
+    // Regular tiles (non-phase)
     // Get tile color based on tileId
     const color = this.getTileColor(tileId, layerType);
 
@@ -145,7 +169,9 @@ export default class LevelLoader {
   getLayerType(layer) {
     const name = layer.name.toLowerCase();
 
-    if (name.includes('solid') || name.includes('collision')) {
+    if (name.includes('phase')) {
+      return 'phase';
+    } else if (name.includes('solid') || name.includes('collision')) {
       return 'solid';
     } else if (name.includes('oneway') || name.includes('platform')) {
       return 'oneway';
@@ -192,6 +218,12 @@ export default class LevelLoader {
     }
     if (this.oneWayPlatforms) {
       this.oneWayPlatforms.clear(true, true);
+    }
+
+    // Destroy phase bricks
+    if (this.phaseBricks) {
+      this.phaseBricks.forEach(brick => brick.destroy());
+      this.phaseBricks = [];
     }
   }
 
