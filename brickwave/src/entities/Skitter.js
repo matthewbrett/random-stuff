@@ -1,4 +1,5 @@
 import Enemy, { EnemyState } from './Enemy.js';
+import { SCALE } from '../config.js';
 
 /**
  * Skitter - Ground beetle enemy
@@ -12,10 +13,10 @@ import Enemy, { EnemyState } from './Enemy.js';
 export default class Skitter extends Enemy {
   constructor(scene, x, y, config = {}) {
     super(scene, x, y, {
-      width: 8,
-      height: 6,
+      width: 8 * SCALE,
+      height: 6 * SCALE,
       color: 0x8b4513, // Brown beetle color
-      speed: 25,
+      speed: 25 * SCALE,
       canBeStopped: true,
       canBeDashed: true,
       scoreValue: 50,
@@ -23,7 +24,7 @@ export default class Skitter extends Enemy {
     });
 
     // Skitter-specific properties
-    this.edgeCheckDistance = 4; // How far ahead to check for edges
+    this.edgeCheckDistance = 4 * SCALE; // How far ahead to check for edges
     this.wallCheckEnabled = true;
     this.edgeCheckEnabled = true;
 
@@ -39,29 +40,29 @@ export default class Skitter extends Enemy {
   createSprite() {
     this.sprite = this.scene.physics.add.sprite(this.x, this.y, null);
 
-    // Generate skitter texture (beetle-like appearance)
-    const textureKey = 'enemy_skitter';
+    // Generate skitter texture (beetle-like appearance, scaled)
+    const textureKey = `enemy_skitter_${SCALE}`;
     if (!this.scene.textures.exists(textureKey)) {
       const graphics = this.scene.add.graphics();
 
       // Body (dark brown)
       graphics.fillStyle(0x8b4513, 1);
-      graphics.fillRect(1, 2, 6, 4);
+      graphics.fillRect(1 * SCALE, 2 * SCALE, 6 * SCALE, 4 * SCALE);
 
       // Shell segments (lighter brown)
       graphics.fillStyle(0xa0522d, 1);
-      graphics.fillRect(2, 2, 2, 3);
-      graphics.fillRect(5, 2, 2, 3);
+      graphics.fillRect(2 * SCALE, 2 * SCALE, 2 * SCALE, 3 * SCALE);
+      graphics.fillRect(5 * SCALE, 2 * SCALE, 2 * SCALE, 3 * SCALE);
 
       // Head (darker)
       graphics.fillStyle(0x654321, 1);
-      graphics.fillRect(0, 3, 2, 2);
+      graphics.fillRect(0, 3 * SCALE, 2 * SCALE, 2 * SCALE);
 
       // Eyes (small dots)
       graphics.fillStyle(0xff0000, 1);
-      graphics.fillRect(0, 3, 1, 1);
+      graphics.fillRect(0, 3 * SCALE, 1 * SCALE, 1 * SCALE);
 
-      graphics.generateTexture(textureKey, 8, 6);
+      graphics.generateTexture(textureKey, 8 * SCALE, 6 * SCALE);
       graphics.destroy();
     }
 
@@ -122,7 +123,7 @@ export default class Skitter extends Enemy {
    */
   checkEdgeAhead() {
     const checkX = this.sprite.x + (this.facing * this.config.width);
-    const checkY = this.sprite.y + this.config.height / 2 + 2;
+    const checkY = this.sprite.y + this.config.height / 2 + 2 * SCALE;
 
     // Check if there's a solid tile below the position ahead
     const platforms = this.scene.platforms;
@@ -135,7 +136,7 @@ export default class Skitter extends Enemy {
       if (hasGroundAhead) return;
 
       const bounds = platform.getBounds();
-      const checkRect = new Phaser.Geom.Rectangle(checkX - 2, checkY, 4, 8);
+      const checkRect = new Phaser.Geom.Rectangle(checkX - 2 * SCALE, checkY, 4 * SCALE, 8 * SCALE);
 
       if (Phaser.Geom.Intersects.RectangleToRectangle(bounds, checkRect)) {
         hasGroundAhead = true;
@@ -206,22 +207,23 @@ export default class Skitter extends Enemy {
    */
   createShellFragments() {
     const colors = [0x8b4513, 0xa0522d, 0x654321];
+    const particleSize = 1 * SCALE;
 
     for (let i = 0; i < 5; i++) {
       const particle = this.scene.add.graphics();
       const color = colors[i % colors.length];
       particle.fillStyle(color, 1);
-      particle.fillRect(-1, -1, 2, 2);
+      particle.fillRect(-particleSize, -particleSize, particleSize * 2, particleSize * 2);
       particle.x = this.sprite.x;
       particle.y = this.sprite.y;
 
       const angle = (Math.random() * Math.PI * 2);
-      const distance = 10 + Math.random() * 10;
+      const distance = (10 + Math.random() * 10) * SCALE;
 
       this.scene.tweens.add({
         targets: particle,
         x: particle.x + Math.cos(angle) * distance,
-        y: particle.y + Math.sin(angle) * distance - 10,
+        y: particle.y + Math.sin(angle) * distance - 10 * SCALE,
         alpha: 0,
         duration: 300 + Math.random() * 200,
         ease: 'Power2',

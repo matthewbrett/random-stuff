@@ -1,5 +1,6 @@
 import Enemy, { EnemyState } from './Enemy.js';
 import { PhaseState } from '../systems/PhaseManager.js';
+import { SCALE } from '../config.js';
 
 /**
  * BlinkBat - Phase-synced flying enemy
@@ -13,10 +14,10 @@ import { PhaseState } from '../systems/PhaseManager.js';
 export default class BlinkBat extends Enemy {
   constructor(scene, x, y, config = {}) {
     super(scene, x, y, {
-      width: 8,
-      height: 6,
+      width: 8 * SCALE,
+      height: 6 * SCALE,
       color: 0x9932cc, // Purple bat color
-      speed: 35,
+      speed: 35 * SCALE,
       canBeStopped: true,
       canBeDashed: true,
       scoreValue: 75,
@@ -27,13 +28,13 @@ export default class BlinkBat extends Enemy {
     this.phaseGroup = config.phaseGroup || 0;
     this.isVisible = false;
 
-    // Flying pattern
+    // Flying pattern (scaled)
     this.startX = x;
     this.startY = y;
     this.flyTime = 0;
     this.flySpeed = 2;
-    this.horizontalRange = 40; // How far to fly horizontally
-    this.verticalAmplitude = 12; // Vertical wave height
+    this.horizontalRange = 40 * SCALE; // How far to fly horizontally
+    this.verticalAmplitude = 12 * SCALE; // Vertical wave height
 
     // Wing animation
     this.wingTime = 0;
@@ -52,31 +53,31 @@ export default class BlinkBat extends Enemy {
   createSprite() {
     this.sprite = this.scene.physics.add.sprite(this.x, this.y, null);
 
-    // Generate bat texture
-    const textureKey = 'enemy_blinkbat';
+    // Generate bat texture (scaled)
+    const textureKey = `enemy_blinkbat_${SCALE}`;
     if (!this.scene.textures.exists(textureKey)) {
       const graphics = this.scene.add.graphics();
 
       // Body (purple)
       graphics.fillStyle(0x9932cc, 1);
-      graphics.fillRect(3, 2, 3, 4);
+      graphics.fillRect(3 * SCALE, 2 * SCALE, 3 * SCALE, 4 * SCALE);
 
       // Wings (darker purple)
       graphics.fillStyle(0x6b238e, 1);
-      graphics.fillRect(0, 2, 3, 2);
-      graphics.fillRect(6, 2, 2, 2);
+      graphics.fillRect(0, 2 * SCALE, 3 * SCALE, 2 * SCALE);
+      graphics.fillRect(6 * SCALE, 2 * SCALE, 2 * SCALE, 2 * SCALE);
 
       // Eyes (glowing)
       graphics.fillStyle(0xff00ff, 1);
-      graphics.fillRect(3, 2, 1, 1);
-      graphics.fillRect(5, 2, 1, 1);
+      graphics.fillRect(3 * SCALE, 2 * SCALE, 1 * SCALE, 1 * SCALE);
+      graphics.fillRect(5 * SCALE, 2 * SCALE, 1 * SCALE, 1 * SCALE);
 
       // Ears
       graphics.fillStyle(0x9932cc, 1);
-      graphics.fillRect(3, 1, 1, 1);
-      graphics.fillRect(5, 1, 1, 1);
+      graphics.fillRect(3 * SCALE, 1 * SCALE, 1 * SCALE, 1 * SCALE);
+      graphics.fillRect(5 * SCALE, 1 * SCALE, 1 * SCALE, 1 * SCALE);
 
-      graphics.generateTexture(textureKey, 8, 6);
+      graphics.generateTexture(textureKey, 8 * SCALE, 6 * SCALE);
       graphics.destroy();
     }
 
@@ -263,22 +264,23 @@ export default class BlinkBat extends Enemy {
    */
   createPoofParticles() {
     const colors = [0x9932cc, 0x6b238e, 0xff00ff];
+    const particleRadius = 2 * SCALE;
+    const particleDistance = 15 * SCALE;
 
     for (let i = 0; i < 6; i++) {
       const particle = this.scene.add.graphics();
       const color = colors[i % colors.length];
       particle.fillStyle(color, 0.8);
-      particle.fillCircle(0, 0, 2);
+      particle.fillCircle(0, 0, particleRadius);
       particle.x = this.sprite.x;
       particle.y = this.sprite.y;
 
       const angle = (i / 6) * Math.PI * 2;
-      const distance = 15;
 
       this.scene.tweens.add({
         targets: particle,
-        x: particle.x + Math.cos(angle) * distance,
-        y: particle.y + Math.sin(angle) * distance,
+        x: particle.x + Math.cos(angle) * particleDistance,
+        y: particle.y + Math.sin(angle) * particleDistance,
         alpha: 0,
         scale: 0.5,
         duration: 250,

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_CONFIG } from '../config.js';
+import { GAME_CONFIG, SCALE } from '../config.js';
 import PhaseBrick from '../entities/PhaseBrick.js';
 
 /**
@@ -232,8 +232,8 @@ export default class LevelLoader {
    */
   getSpawnPoint(name = 'player') {
     if (!this.objects || !this.objects.Entities) {
-      // Default spawn point
-      return { x: 160, y: 100 };
+      // Default spawn point (scaled)
+      return { x: 160 * SCALE, y: 100 * SCALE };
     }
 
     const spawnObj = this.objects.Entities.find(obj =>
@@ -241,13 +241,14 @@ export default class LevelLoader {
     );
 
     if (spawnObj) {
+      // Scale spawn point coordinates from Tiled
       return {
-        x: spawnObj.x + spawnObj.width / 2,
-        y: spawnObj.y - spawnObj.height / 2, // Tiled uses bottom-left for objects
+        x: (spawnObj.x + spawnObj.width / 2) * SCALE,
+        y: (spawnObj.y - spawnObj.height / 2) * SCALE, // Tiled uses bottom-left for objects
       };
     }
 
-    return { x: 160, y: 100 };
+    return { x: 160 * SCALE, y: 100 * SCALE };
   }
 
   /**

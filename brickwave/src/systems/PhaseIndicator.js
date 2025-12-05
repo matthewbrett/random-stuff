@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PhaseState } from './PhaseManager.js';
 import { TextStyles, createSmoothText } from '../utils/TextStyles.js';
+import { SCALE } from '../config.js';
 
 /**
  * PhaseIndicator - HUD element that shows phase timing
@@ -16,10 +17,10 @@ export default class PhaseIndicator {
     this.x = x;
     this.y = y;
 
-    // Dimensions
-    this.width = 60;
-    this.height = 6;
-    this.padding = 1;
+    // Dimensions (scaled)
+    this.width = 60 * SCALE;
+    this.height = 6 * SCALE;
+    this.padding = 1 * SCALE;
 
     // Container for UI elements
     this.container = scene.add.container(x, y);
@@ -46,20 +47,20 @@ export default class PhaseIndicator {
     this.progressBar.setOrigin(0, 0.5);
     this.container.add(this.progressBar);
 
-    // Pulse indicator (flashes on phase change)
+    // Pulse indicator (flashes on phase change) - scaled
     this.pulseIndicator = scene.add.circle(
-      this.width / 2 + 6,
+      this.width / 2 + 6 * SCALE,
       0,
-      3,
+      3 * SCALE,
       0x3b82f6
     );
     this.pulseIndicator.setAlpha(0.8);
     this.container.add(this.pulseIndicator);
 
-    // Phase label
+    // Phase label (scaled offset)
     this.phaseLabel = createSmoothText(
       scene,
-      -this.width / 2 - 4,
+      -this.width / 2 - 4 * SCALE,
       0,
       'PHASE',
       TextStyles.hudLabel

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_CONFIG } from '../config.js';
+import { GAME_CONFIG, SCALE } from '../config.js';
 
 /**
  * Player - The player character with feel-first movement controls
@@ -19,43 +19,44 @@ export default class Player {
     // Create player sprite (placeholder rectangle)
     this.sprite = scene.physics.add.sprite(x, y, null);
 
-    // Create a simple rectangle for the player (8x8 pixels)
+    // Create a simple rectangle for the player (8x8 pixels, scaled)
+    const playerSize = 8 * SCALE;
     const graphics = scene.add.graphics();
     graphics.fillStyle(0x00ffff, 1); // Cyan color
-    graphics.fillRect(0, 0, 8, 8);
-    graphics.generateTexture('player', 8, 8);
+    graphics.fillRect(0, 0, playerSize, playerSize);
+    graphics.generateTexture('player', playerSize, playerSize);
     graphics.destroy();
 
     this.sprite.setTexture('player');
     this.sprite.setOrigin(0.5, 0.5);
 
     // Physics properties
-    this.sprite.body.setSize(8, 8);
+    this.sprite.body.setSize(playerSize, playerSize);
     this.sprite.body.setCollideWorldBounds(true);
-    this.sprite.body.setMaxVelocity(200, 500);
+    this.sprite.body.setMaxVelocity(200 * SCALE, 500 * SCALE);
 
     // Movement constants (tuned for tight, responsive feel)
-    this.moveSpeed = 80;
-    this.maxSpeed = 80;
-    this.acceleration = 600;
-    this.friction = 500;
-    this.airAcceleration = 400;
-    this.airFriction = 200;
+    this.moveSpeed = 80 * SCALE;
+    this.maxSpeed = 80 * SCALE;
+    this.acceleration = 600 * SCALE;
+    this.friction = 500 * SCALE;
+    this.airAcceleration = 400 * SCALE;
+    this.airFriction = 200 * SCALE;
 
     // Jump constants
-    this.jumpVelocity = -220;
-    this.jumpHoldBoost = -40; // Additional velocity when holding jump
-    this.minJumpVelocity = -100; // Minimum jump when released early
-    this.maxJumpHoldTime = 200; // Max time to hold jump for extra height (ms)
+    this.jumpVelocity = -220 * SCALE;
+    this.jumpHoldBoost = -40 * SCALE; // Additional velocity when holding jump
+    this.minJumpVelocity = -100 * SCALE; // Minimum jump when released early
+    this.maxJumpHoldTime = 200; // Max time to hold jump for extra height (ms) - time stays same
 
     // Advanced movement mechanics
     this.coyoteTime = GAME_CONFIG.COYOTE_TIME; // Grace period after leaving platform
     this.jumpBuffer = GAME_CONFIG.JUMP_BUFFER; // Input memory for jump
 
     // Dash constants
-    this.dashSpeed = 200;
-    this.dashDuration = 200; // ms
-    this.dashCooldown = 300; // ms
+    this.dashSpeed = 200 * SCALE;
+    this.dashDuration = 200; // ms - time stays same
+    this.dashCooldown = 300; // ms - time stays same
 
     // State tracking
     this.isGrounded = false;

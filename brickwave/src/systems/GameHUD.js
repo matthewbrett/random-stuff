@@ -1,3 +1,5 @@
+import { SCALE } from '../config.js';
+
 /**
  * GameHUD - Heads-Up Display for game information
  *
@@ -19,13 +21,13 @@ export default class GameHUD {
     this.container.setScrollFactor(0);
     this.container.setDepth(1000); // Always on top
 
-    // Text style for HUD
+    // Text style for HUD (scaled)
     this.textStyle = {
       fontFamily: 'Courier New, monospace',
-      fontSize: '8px',
+      fontSize: `${8 * SCALE}px`,
       color: '#ffffff',
       stroke: '#000000',
-      strokeThickness: 2
+      strokeThickness: 2 * SCALE
     };
 
     // Create HUD elements
@@ -39,8 +41,8 @@ export default class GameHUD {
    * Create all HUD elements
    */
   createHUDElements() {
-    const padding = 4;
-    const lineHeight = 10;
+    const padding = 4 * SCALE;
+    const lineHeight = 10 * SCALE;
 
     // World/Level display (top left)
     this.worldText = this.scene.add.text(
@@ -279,7 +281,7 @@ export default class GameHUD {
       `LEVEL COMPLETE!\n\nScore: ${this.scoreManager.getScore()}\nTime Bonus: ${timeBonus}\nStyle Bonus: ${styleBonus}\n--------------\nTotal: ${totalScore}`,
       {
         ...this.textStyle,
-        fontSize: '10px',
+        fontSize: `${10 * SCALE}px`,
         align: 'center'
       }
     );

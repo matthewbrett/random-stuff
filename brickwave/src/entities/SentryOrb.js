@@ -1,4 +1,5 @@
 import Enemy, { EnemyState } from './Enemy.js';
+import { SCALE } from '../config.js';
 
 /**
  * SentryOrb - Floating patrol enemy
@@ -12,10 +13,10 @@ import Enemy, { EnemyState } from './Enemy.js';
 export default class SentryOrb extends Enemy {
   constructor(scene, x, y, config = {}) {
     super(scene, x, y, {
-      width: 8,
-      height: 8,
+      width: 8 * SCALE,
+      height: 8 * SCALE,
       color: 0x00ffff, // Cyan orb color
-      speed: 40,
+      speed: 40 * SCALE,
       canBeStopped: true,
       canBeDashed: true,
       scoreValue: 100,
@@ -28,10 +29,10 @@ export default class SentryOrb extends Enemy {
     this.orbitTime = Math.random() * Math.PI * 2; // Random start position in orbit
     this.orbitSpeed = 1.5; // Speed of orbit
 
-    // Orbit pattern configuration
+    // Orbit pattern configuration (scaled)
     this.orbitType = config.orbitType || 'arc'; // 'arc', 'circle', 'figure8'
-    this.orbitRadiusX = config.orbitRadiusX || 24;
-    this.orbitRadiusY = config.orbitRadiusY || 16;
+    this.orbitRadiusX = config.orbitRadiusX || 24 * SCALE;
+    this.orbitRadiusY = config.orbitRadiusY || 16 * SCALE;
 
     // Visual effects
     this.pulseTime = 0;
@@ -48,24 +49,26 @@ export default class SentryOrb extends Enemy {
   createSprite() {
     this.sprite = this.scene.physics.add.sprite(this.x, this.y, null);
 
-    // Generate orb texture with gradient-like appearance
-    const textureKey = 'enemy_sentryorb';
+    // Generate orb texture with gradient-like appearance (scaled)
+    const textureKey = `enemy_sentryorb_${SCALE}`;
+    const orbSize = 8 * SCALE;
+    const center = 4 * SCALE;
     if (!this.scene.textures.exists(textureKey)) {
       const graphics = this.scene.add.graphics();
 
       // Outer ring (darker cyan)
       graphics.fillStyle(0x008b8b, 1);
-      graphics.fillCircle(4, 4, 4);
+      graphics.fillCircle(center, center, 4 * SCALE);
 
       // Inner circle (bright cyan)
       graphics.fillStyle(0x00ffff, 1);
-      graphics.fillCircle(4, 4, 3);
+      graphics.fillCircle(center, center, 3 * SCALE);
 
       // Core (white highlight)
       graphics.fillStyle(0xffffff, 1);
-      graphics.fillCircle(3, 3, 1);
+      graphics.fillCircle(3 * SCALE, 3 * SCALE, 1 * SCALE);
 
-      graphics.generateTexture(textureKey, 8, 8);
+      graphics.generateTexture(textureKey, orbSize, orbSize);
       graphics.destroy();
     }
 
@@ -90,7 +93,7 @@ export default class SentryOrb extends Enemy {
 
     this.glow.clear();
     this.glow.fillStyle(0x00ffff, this.glowIntensity);
-    this.glow.fillCircle(0, 0, 6);
+    this.glow.fillCircle(0, 0, 6 * SCALE);
     this.glow.x = this.sprite.x;
     this.glow.y = this.sprite.y;
   }
@@ -104,7 +107,7 @@ export default class SentryOrb extends Enemy {
     // Orbs float, no gravity
     this.sprite.body.setAllowGravity(false);
     this.sprite.body.setImmovable(true);
-    this.sprite.body.setCircle(4);
+    this.sprite.body.setCircle(4 * SCALE);
   }
 
   /**
@@ -176,9 +179,9 @@ export default class SentryOrb extends Enemy {
    * Handle being stomped - player bounces higher on orbs
    */
   onStomp(player) {
-    // Orbs give a higher bounce than normal enemies
+    // Orbs give a higher bounce than normal enemies (scaled)
     this.die();
-    player.sprite.body.setVelocityY(-200);
+    player.sprite.body.setVelocityY(-200 * SCALE);
 
     console.log(`🔮 Sentry Orb bounced! +${this.config.scoreValue}`);
   }
@@ -217,29 +220,31 @@ export default class SentryOrb extends Enemy {
    */
   createElectricParticles() {
     const colors = [0x00ffff, 0xffffff, 0x00ff00];
+    const lineWidth = 1 * SCALE;
+    const length = 8 * SCALE;
+    const jitterRange = 4 * SCALE;
+    const particleDistance = 20 * SCALE;
 
     for (let i = 0; i < 8; i++) {
       const particle = this.scene.add.graphics();
       const color = colors[i % colors.length];
-      particle.lineStyle(1, color, 1);
+      particle.lineStyle(lineWidth, color, 1);
 
-      // Draw a small lightning bolt
-      const length = 8;
+      // Draw a small lightning bolt (scaled)
       particle.moveTo(0, 0);
-      particle.lineTo(Math.random() * 4 - 2, -length / 2);
-      particle.lineTo(Math.random() * 4 - 2, -length);
+      particle.lineTo(Math.random() * jitterRange - jitterRange / 2, -length / 2);
+      particle.lineTo(Math.random() * jitterRange - jitterRange / 2, -length);
       particle.stroke();
 
       particle.x = this.sprite.x;
       particle.y = this.sprite.y;
 
       const angle = (i / 8) * Math.PI * 2;
-      const distance = 20;
 
       this.scene.tweens.add({
         targets: particle,
-        x: particle.x + Math.cos(angle) * distance,
-        y: particle.y + Math.sin(angle) * distance,
+        x: particle.x + Math.cos(angle) * particleDistance,
+        y: particle.y + Math.sin(angle) * particleDistance,
         alpha: 0,
         rotation: Math.random() * Math.PI,
         duration: 200 + Math.random() * 100,

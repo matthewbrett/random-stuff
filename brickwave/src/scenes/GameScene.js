@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_CONFIG } from '../config.js';
+import { GAME_CONFIG, SCALE } from '../config.js';
 import Player from '../entities/Player.js';
 import Coin from '../entities/Coin.js';
 import LevelLoader from '../systems/LevelLoader.js';
@@ -83,7 +83,7 @@ export default class GameScene extends Phaser.Scene {
         this,
         this.phaseManager,
         GAME_CONFIG.GAME_WIDTH / 2, // Center horizontally
-        20, // Near top of screen
+        20 * SCALE, // Near top of screen (scaled)
         0 // Group 0 (default)
       );
     }
@@ -95,8 +95,8 @@ export default class GameScene extends Phaser.Scene {
     // Start level timer
     this.scoreManager.startTimer();
 
-    // Add debug text
-    this.debugText = createSmoothText(this, 10, 10, '', TextStyles.debug);
+    // Add debug text (scaled position)
+    this.debugText = createSmoothText(this, 10 * SCALE, 10 * SCALE, '', TextStyles.debug);
     this.debugText.setScrollFactor(0);
     this.debugText.setDepth(1000);
   }
@@ -137,9 +137,9 @@ export default class GameScene extends Phaser.Scene {
     // If no coins found in level data, create some test coins
     if (this.coins.length === 0) {
       console.log('No coins found in level, creating test coins...');
-      // Create a line of test coins
+      // Create a line of test coins (scaled positions)
       for (let i = 0; i < 10; i++) {
-        const coin = new Coin(this, 50 + i * 20, 100);
+        const coin = new Coin(this, (50 + i * 20) * SCALE, 100 * SCALE);
         this.coins.push(coin);
       }
     }
