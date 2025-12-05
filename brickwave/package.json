@@ -1,0 +1,26 @@
+{
+  "name": "brickwave",
+  "version": "0.1.0",
+  "description": "BRICKWAVE - A fast, tight 2D pixel platformer with phase brick mechanics",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "game",
+    "platformer",
+    "phaser",
+    "pixel-art",
+    "browser-game"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
