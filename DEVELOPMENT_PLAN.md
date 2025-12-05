@@ -16,70 +16,87 @@ This document outlines the phased development approach for building BRICKWAVE, a
 
 ## 📋 Development Phases
 
-### **Phase 1: Project Setup & Core Infrastructure**
+### **Phase 1: Project Setup & Core Infrastructure** ✅
 **Goal**: Establish the technical foundation
 
 **Tasks**:
-- [ ] Create project structure with organized folders
-- [ ] Set up package.json and dependencies (Phaser 3, build tools)
-- [ ] Configure build system (Vite/Webpack for hot reload)
-- [ ] Initialize Phaser 3 game instance with proper config
-- [ ] Set up fixed internal resolution (320×180) with letterboxing
-- [ ] Implement fixed timestep physics (60fps)
-- [ ] Create basic canvas rendering test
-- [ ] Set up Git workflow and version control
+- [x] Create project structure with organized folders
+- [x] Set up package.json and dependencies (Phaser 3, build tools)
+- [x] Configure build system (Vite/Webpack for hot reload)
+- [x] Initialize Phaser 3 game instance with proper config
+- [x] Set up fixed internal resolution (320×180) with letterboxing
+- [x] Implement fixed timestep physics (60fps)
+- [x] Create basic canvas rendering test
+- [x] Set up Git workflow and version control
 
 **Deliverables**:
-- Working dev environment with hot reload
-- Black screen with Phaser running at 60fps
-- Project documentation (README)
+- ✅ Working dev environment with hot reload
+- ✅ Black screen with Phaser running at 60fps
+- ✅ Project documentation (README)
 
 **Estimated Time**: 2-3 days
 
 ---
 
-### **Phase 2: Core Player Movement**
+### **Phase 2: Core Player Movement** ✅
 **Goal**: Nail the feel-first controls
 
 **Tasks**:
-- [ ] Create player sprite placeholder (8×8 or 16×16 pixel)
-- [ ] Implement keyboard input handling (← → A D for movement)
-- [ ] Add horizontal movement with acceleration/deceleration
-- [ ] Implement gravity and ground detection
-- [ ] Add jump mechanic with variable height (hold for higher)
-- [ ] Implement coyote time (~100ms grace period)
-- [ ] Add jump buffer (~100ms input memory)
-- [ ] Create dash mechanic (consumes Echo charge)
-- [ ] Add crouch/drop-through for thin platforms
-- [ ] Fine-tune movement physics to feel tight and responsive
+- [x] Create player sprite placeholder (8×8 or 16×16 pixel)
+- [x] Implement keyboard input handling (← → A D for movement)
+- [x] Add horizontal movement with acceleration/deceleration
+- [x] Implement gravity and ground detection
+- [x] Add jump mechanic with variable height (hold for higher)
+- [x] Implement coyote time (~100ms grace period)
+- [x] Add jump buffer (~100ms input memory)
+- [x] Create dash mechanic (consumes Echo charge)
+- [x] Add crouch/drop-through for thin platforms
+- [x] Fine-tune movement physics to feel tight and responsive
 
 **Deliverables**:
-- Playable character with smooth, responsive controls
-- Movement feels "right" - this is critical!
+- ✅ Playable character with smooth, responsive controls
+- ✅ Movement feels "right" - this is critical!
 
 **Estimated Time**: 4-5 days
 
+**Implementation Notes**:
+- Created `Player` class in `src/entities/Player.js`
+- All core movement mechanics implemented and working
+- Feel-first controls with proper acceleration/deceleration
+- Coyote time and jump buffer make platforming feel forgiving
+- Dash mechanic consumes Echo charges
+- Drop-through support for one-way platforms
+
 ---
 
-### **Phase 3: Level System & Tiles**
+### **Phase 3: Level System & Tiles** ✅
 **Goal**: Build the world structure
 
 **Tasks**:
-- [ ] Integrate Tiled map editor workflow
-- [ ] Create tile map loader (JSON import from Tiled)
-- [ ] Implement solid tile collision detection
-- [ ] Add one-way platform support (can jump through, land on top)
-- [ ] Create camera system that follows player
-- [ ] Add level boundaries and wrapping prevention
-- [ ] Build simple test level (single screen) for iteration
-- [ ] Add tile layers: Background, Solid, One-Way, Foreground
+- [x] Integrate Tiled map editor workflow
+- [x] Create tile map loader (JSON import from Tiled)
+- [x] Implement solid tile collision detection
+- [x] Add one-way platform support (can jump through, land on top)
+- [x] Create camera system that follows player
+- [x] Add level boundaries and wrapping prevention
+- [x] Build simple test level (single screen) for iteration
+- [x] Add tile layers: Background, Solid, One-Way, Foreground
 
 **Deliverables**:
-- Working tile-based level system
-- At least one test level loaded from Tiled JSON
-- Smooth camera movement
+- ✅ Working tile-based level system
+- ✅ At least one test level loaded from Tiled JSON
+- ✅ Smooth camera movement
 
 **Estimated Time**: 3-4 days
+**Actual Time**: ~1 session
+
+**Implementation Notes**:
+- Created `LevelLoader` system in `src/systems/LevelLoader.js`
+- Supports multiple tile layers (Background, Solid, One-Way, Foreground)
+- Implemented one-way platform collision with drop-through support (press Down)
+- Camera automatically follows player with level boundaries
+- Test level created at `assets/levels/test-level-1.json`
+- Player spawn points loaded from object layers
 
 ---
 
@@ -326,9 +343,9 @@ This document outlines the phased development approach for building BRICKWAVE, a
 
 | Phase | Milestone | Status |
 |-------|-----------|--------|
-| 1 | Project boots and renders | ⬜ |
-| 2 | Player movement feels good | ⬜ |
-| 3 | Levels load from Tiled | ⬜ |
+| 1 | Project boots and renders | ✅ |
+| 2 | Player movement feels good | ✅ |
+| 3 | Levels load from Tiled | ✅ |
 | 4 | Phase bricks work perfectly | ⬜ |
 | 5 | Scoring and HUD complete | ⬜ |
 | 6 | Enemies challenge player | ⬜ |
