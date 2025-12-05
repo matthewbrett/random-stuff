@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SCALE } from '../config.js';
 
 /**
  * Enemy - Base class for all enemies
@@ -24,10 +25,10 @@ export default class Enemy {
 
     // Configuration with defaults
     this.config = {
-      width: 8,
-      height: 8,
+      width: 8 * SCALE,
+      height: 8 * SCALE,
       color: 0xff0000,
-      speed: 30,
+      speed: 30 * SCALE,
       canBeStopped: true,
       canBeDashed: true,
       scoreValue: 50,
@@ -109,7 +110,7 @@ export default class Enemy {
     // Check if player is above enemy and moving downward
     const playerBottom = playerSprite.body.y + playerSprite.body.height;
     const enemyTop = enemySprite.body.y;
-    const isAbove = playerBottom <= enemyTop + 6; // Small tolerance
+    const isAbove = playerBottom <= enemyTop + 6 * SCALE; // Small tolerance (scaled)
     const isFalling = playerSprite.body.velocity.y > 0;
 
     return isAbove && isFalling;
@@ -133,8 +134,8 @@ export default class Enemy {
   onStomp(player) {
     this.die();
 
-    // Bounce the player up after stomp
-    player.sprite.body.setVelocityY(-150);
+    // Bounce the player up after stomp (scaled)
+    player.sprite.body.setVelocityY(-150 * SCALE);
 
     console.log(`👟 Enemy stomped! +${this.config.scoreValue}`);
   }
@@ -196,21 +197,22 @@ export default class Enemy {
    * Create death particle effect
    */
   createDeathParticles() {
-    // Simple particle burst
+    // Simple particle burst (scaled)
+    const particleSize = 2 * SCALE;
+    const particleDistance = 20 * SCALE;
     for (let i = 0; i < 4; i++) {
       const particle = this.scene.add.graphics();
       particle.fillStyle(this.config.color, 1);
-      particle.fillRect(-2, -2, 4, 4);
+      particle.fillRect(-particleSize, -particleSize, particleSize * 2, particleSize * 2);
       particle.x = this.sprite.x;
       particle.y = this.sprite.y;
 
       const angle = (i / 4) * Math.PI * 2;
-      const speed = 50;
 
       this.scene.tweens.add({
         targets: particle,
-        x: particle.x + Math.cos(angle) * 20,
-        y: particle.y + Math.sin(angle) * 20,
+        x: particle.x + Math.cos(angle) * particleDistance,
+        y: particle.y + Math.sin(angle) * particleDistance,
         alpha: 0,
         duration: 300,
         ease: 'Power2',

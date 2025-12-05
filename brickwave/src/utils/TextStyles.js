@@ -1,3 +1,5 @@
+import { SCALE } from '../config.js';
+
 /**
  * TextStyles.js
  *
@@ -15,23 +17,23 @@ const baseStyle = {
 };
 
 /**
- * Predefined text styles for consistent UI
+ * Predefined text styles for consistent UI (scaled)
  */
 export const TextStyles = {
   // Large title text (e.g., "BRICKWAVE")
   title: {
     ...baseStyle,
-    fontSize: '32px',
+    fontSize: `${32 * SCALE}px`,
     color: '#00ffff',
     stroke: '#0066aa',
-    strokeThickness: 2,
+    strokeThickness: 2 * SCALE,
     align: 'center',
   },
 
   // Subtitle text
   subtitle: {
     ...baseStyle,
-    fontSize: '12px',
+    fontSize: `${12 * SCALE}px`,
     color: '#ffffff',
     align: 'center',
   },
@@ -39,7 +41,7 @@ export const TextStyles = {
   // Small prompts and hints
   hint: {
     ...baseStyle,
-    fontSize: '10px',
+    fontSize: `${10 * SCALE}px`,
     color: '#aaaaaa',
     align: 'center',
   },
@@ -47,28 +49,28 @@ export const TextStyles = {
   // Debug/info text
   debug: {
     ...baseStyle,
-    fontSize: '10px',
+    fontSize: `${10 * SCALE}px`,
     color: '#ffffff',
     backgroundColor: '#00000088',
-    padding: { x: 6, y: 4 },
+    padding: { x: 6 * SCALE, y: 4 * SCALE },
   },
 
   // HUD labels
   hudLabel: {
     ...baseStyle,
-    fontSize: '10px',
+    fontSize: `${10 * SCALE}px`,
     color: '#ffffff',
     stroke: '#000000',
-    strokeThickness: 2,
+    strokeThickness: 2 * SCALE,
   },
 
   // HUD values
   hudValue: {
     ...baseStyle,
-    fontSize: '12px',
+    fontSize: `${12 * SCALE}px`,
     color: '#00ffff',
     stroke: '#000000',
-    strokeThickness: 2,
+    strokeThickness: 2 * SCALE,
   },
 };
 

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SCALE } from '../config.js';
 
 /**
  * Coin - Collectible that awards points and contributes to Echo Charges
@@ -17,27 +18,30 @@ export default class Coin {
     // Create coin sprite (placeholder circle)
     this.sprite = scene.physics.add.sprite(x, y, null);
 
-    // Create a simple coin graphic (6x6 pixel gold circle)
-    if (!scene.textures.exists('coin')) {
+    // Create a simple coin graphic (6x6 pixel gold circle, scaled)
+    const coinSize = 6 * SCALE;
+    const coinRadius = 3 * SCALE;
+    const textureKey = `coin_${SCALE}`;
+    if (!scene.textures.exists(textureKey)) {
       const graphics = scene.add.graphics();
 
       // Draw outer circle (gold)
       graphics.fillStyle(0xffcc00, 1);
-      graphics.fillCircle(3, 3, 3);
+      graphics.fillCircle(coinRadius, coinRadius, coinRadius);
 
       // Draw inner highlight
       graphics.fillStyle(0xffff99, 1);
-      graphics.fillCircle(2, 2, 1);
+      graphics.fillCircle(2 * SCALE, 2 * SCALE, 1 * SCALE);
 
-      graphics.generateTexture('coin', 6, 6);
+      graphics.generateTexture(textureKey, coinSize, coinSize);
       graphics.destroy();
     }
 
-    this.sprite.setTexture('coin');
+    this.sprite.setTexture(textureKey);
     this.sprite.setOrigin(0.5, 0.5);
 
     // Physics setup
-    this.sprite.body.setSize(6, 6);
+    this.sprite.body.setSize(coinSize, coinSize);
     this.sprite.body.setAllowGravity(false); // Coins float in place
     this.sprite.body.setImmovable(true);
 
@@ -61,7 +65,7 @@ export default class Coin {
     this.sprite.setScale(scale);
 
     // Floating animation (subtle up/down motion)
-    const floatOffset = Math.sin(this.pulseTime / 600) * 2;
+    const floatOffset = Math.sin(this.pulseTime / 600) * 2 * SCALE;
     this.sprite.y = this.baseY + floatOffset;
   }
 
@@ -91,7 +95,7 @@ export default class Coin {
     // Create a quick flash/sparkle effect
     const flash = this.scene.add.graphics();
     flash.fillStyle(0xffff00, 1);
-    flash.fillCircle(this.sprite.x, this.sprite.y, 8);
+    flash.fillCircle(this.sprite.x, this.sprite.y, 8 * SCALE);
     flash.setAlpha(0.8);
 
     // Fade out and destroy
