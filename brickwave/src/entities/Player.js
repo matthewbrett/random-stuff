@@ -71,7 +71,9 @@ export default class Player {
     this.dashTime = 0;
     this.dashDirection = 0;
     this.lastDashTime = 0;
-    this.echoCharges = 1; // Start with 1 charge for testing
+
+    // ScoreManager reference (set externally)
+    this.scoreManager = null;
 
     // Crouch state
     this.isCrouching = false;
@@ -238,8 +240,11 @@ export default class Player {
   handleDash(time, delta) {
     const dashPressed = Phaser.Input.Keyboard.JustDown(this.keys.dash);
 
+    // Get echo charges from score manager
+    const hasCharges = this.scoreManager ? this.scoreManager.getEchoCharges() > 0 : false;
+
     // Start dash
-    if (dashPressed && !this.isDashing && this.echoCharges > 0 &&
+    if (dashPressed && !this.isDashing && hasCharges &&
         time - this.lastDashTime > this.dashCooldown) {
       this.startDash(time);
     }
@@ -268,14 +273,19 @@ export default class Player {
     this.dashTime = 0;
     this.dashDirection = dashDir;
     this.lastDashTime = time;
-    this.echoCharges--;
+
+    // Use echo charge from score manager
+    if (this.scoreManager) {
+      this.scoreManager.useEchoCharge();
+    }
 
     // Apply dash velocity
     this.sprite.body.setVelocityX(this.dashSpeed * dashDir);
     this.sprite.body.setVelocityY(0);
     this.sprite.body.setAccelerationX(0);
 
-    console.log('🎮 Player: Dash! Direction:', dashDir, 'Charges left:', this.echoCharges);
+    const chargesLeft = this.scoreManager ? this.scoreManager.getEchoCharges() : 0;
+    console.log('🎮 Player: Dash! Direction:', dashDir, 'Charges left:', chargesLeft);
   }
 
   endDash() {
@@ -313,18 +323,7 @@ export default class Player {
   }
 
   // Public methods for external interaction
-  addEchoCharge() {
-    if (this.echoCharges < GAME_CONFIG.MAX_ECHO_CHARGES) {
-      this.echoCharges++;
-      console.log('🎮 Player: Echo charge gained! Total:', this.echoCharges);
-    }
-  }
-
-  removeEchoCharge() {
-    if (this.echoCharges > 0) {
-      this.echoCharges--;
-    }
-  }
+  // Echo charges are now managed by ScoreManager
 
   getPosition() {
     return { x: this.sprite.x, y: this.sprite.y };
