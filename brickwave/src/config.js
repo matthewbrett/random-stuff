@@ -37,7 +37,7 @@ export const config = {
     default: 'arcade',
     arcade: {
       gravity: { y: 800 * SCALE },
-      debug: true, // Set to true during development
+      debug: false, // Set to true during development
       fps: 60,
       fixedStep: true,
       timeScale: 1,
