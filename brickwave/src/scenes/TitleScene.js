@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
 import { TextStyles, createCenteredText, createSmoothText } from '../utils/TextStyles.js';
+import audioManager from '../systems/AudioManager.js';
+import transitionManager from '../systems/TransitionManager.js';
 
 /**
  * TitleScene - Main menu and title screen
@@ -24,6 +26,9 @@ export default class TitleScene extends Phaser.Scene {
   create() {
     console.log('🎮 TitleScene: Creating title screen...');
 
+    // Initialize audio manager with this scene
+    audioManager.init(this);
+
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
 
     // Create background with gradient effect
@@ -43,6 +48,10 @@ export default class TitleScene extends Phaser.Scene {
 
     // Reset idle timer
     this.idleTimer = 0;
+
+    // Fade in transition
+    transitionManager.init(this);
+    transitionManager.fadeIn({ duration: 300 });
   }
 
   /**
@@ -251,6 +260,11 @@ export default class TitleScene extends Phaser.Scene {
     if (index < 0) index = this.menuItems.length - 1;
     if (index >= this.menuItems.length) index = 0;
 
+    // Only play sound if selection changed
+    if (index !== this.selectedIndex) {
+      audioManager.playMenuSelect();
+    }
+
     this.selectedIndex = index;
     this.updateMenuSelection();
   }
@@ -281,6 +295,9 @@ export default class TitleScene extends Phaser.Scene {
    */
   confirmSelection() {
     const selected = this.menuItems[this.selectedIndex];
+
+    // Play confirm sound
+    audioManager.playMenuConfirm();
 
     // Flash effect on selection
     this.cameras.main.flash(100, 0, 255, 255, true);

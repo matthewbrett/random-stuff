@@ -4,7 +4,7 @@
 
 **BRICKWAVE** is a browser-based pixel platformer game inspired by 80s underground runners, featuring a unique "phase brick" mechanic where blocks toggle between solid and ghost states on a rhythmic cycle.
 
-**Current Status**: Phase 8 Complete - UI & Menus fully implemented with title screen, level select, settings, pause menu, instant restart, and results screen with rank display, ready for Phase 9 (Persistence & Polish)
+**Current Status**: Phase 9 Complete - Persistence & Polish implemented with localStorage save system, procedural WebAudio sound effects, particle effects, and screen transitions. Ready for Phase 10 (Accessibility & Final MVP)
 
 ## Key Information
 
@@ -200,15 +200,16 @@ As of 2025-12-06:
 - ✅ **Phase 6 Complete**: Enemies & Combat with 3 enemy types, stomp/dash mechanics, EnemyManager system
 - ✅ **Phase 7 Complete**: Level Content with 3 playable levels, Key Shards, level exits, dynamic loading
 - ✅ **Phase 8 Complete**: UI & Menus with title screen, level select, settings, pause menu, instant restart
-- 🎯 **Next Up**: Phase 9 - Persistence & Polish (save system, audio, particle effects)
+- ✅ **Phase 9 Complete**: Persistence & Polish with save system, procedural audio, particle effects, transitions
+- 🎯 **Next Up**: Phase 10 - Accessibility & Final MVP (touch controls, assist modes, final polish)
 
 **Key Files**:
 - `src/scenes/TitleScene.js` - Title screen with animated logo, menu, floating particles
-- `src/scenes/LevelSelectScene.js` - Level selection with best times and key shards display
-- `src/scenes/SettingsScene.js` - Settings menu (volume, display, accessibility options)
-- `src/scenes/GameScene.js` - Main game scene with pause menu, instant restart, and results screen
+- `src/scenes/LevelSelectScene.js` - Level selection with best times, key shards, and rank display
+- `src/scenes/SettingsScene.js` - Settings menu with volume, display, accessibility, export/import save
+- `src/scenes/GameScene.js` - Main game scene with pause menu, instant restart, results screen, persistence
 - `src/utils/TextStyles.js` - Centralized text styles for menus, HUD, and rank display
-- `src/entities/Player.js` - Complete player movement system (integrated with ScoreManager)
+- `src/entities/Player.js` - Complete player movement system with audio and particle effects
 - `src/entities/PhaseBrick.js` - Phase brick with visual feedback and collision states
 - `src/entities/Coin.js` - Collectible coins with pulsing/floating animation
 - `src/entities/KeyShard.js` - Collectible key shards with glowing effect (3 per level)
@@ -223,6 +224,10 @@ As of 2025-12-06:
 - `src/systems/ScoreManager.js` - Score, coins, Echo Charges, Key Shards, and bonus tracking
 - `src/systems/GameHUD.js` - Complete HUD display with all game information (includes Key Shards)
 - `src/systems/EnemyManager.js` - Enemy spawning and collision management
+- `src/systems/SaveManager.js` - LocalStorage persistence with export/import functionality
+- `src/systems/AudioManager.js` - Procedural WebAudio sound effects (no external files needed)
+- `src/systems/ParticleEffects.js` - Lightweight particle effects for gameplay feedback
+- `src/systems/TransitionManager.js` - Screen transition effects (fade, slide, wipe)
 - `assets/levels/level-1-1.json` - Level 1-1: Catacomb Entrance (intro level)
 - `assets/levels/level-1-2.json` - Level 1-2: Phase Corridors (phase brick tutorial)
 - `assets/levels/level-1-3.json` - Level 1-3: The Vertical Descent (vertical challenge)

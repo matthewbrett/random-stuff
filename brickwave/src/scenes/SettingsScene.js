@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE, RESOLUTION_MODE, setResolutionMode } from '../config.js';
 import { TextStyles, createCenteredText, createSmoothText } from '../utils/TextStyles.js';
+import saveManager from '../systems/SaveManager.js';
 
 /**
  * SettingsScene - Game settings menu
@@ -28,6 +29,8 @@ export default class SettingsScene extends Phaser.Scene {
       { key: 'showTimer', label: 'Show Timer', type: 'toggle', options: ['On', 'Off'] },
       { key: 'separator3', label: '', type: 'separator' },
       { key: 'controls', label: 'View Controls', type: 'action' },
+      { key: 'exportSave', label: 'Export Save', type: 'action' },
+      { key: 'importSave', label: 'Import Save', type: 'action' },
       { key: 'resetProgress', label: 'Reset Progress', type: 'action', dangerous: true },
     ];
 
@@ -408,6 +411,12 @@ export default class SettingsScene extends Phaser.Scene {
       case 'controls':
         this.showControls();
         break;
+      case 'exportSave':
+        this.showExportSave();
+        break;
+      case 'importSave':
+        this.showImportSave();
+        break;
       case 'resetProgress':
         this.confirmResetProgress();
         break;
@@ -488,6 +497,198 @@ export default class SettingsScene extends Phaser.Scene {
   }
 
   /**
+   * Show export save overlay with copy-able JSON
+   */
+  showExportSave() {
+    // Initialize SaveManager to ensure data is loaded
+    saveManager.init();
+
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.95);
+    overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
+    overlay.setDepth(100);
+
+    const centerX = GAME_CONFIG.GAME_WIDTH / 2;
+
+    const title = createCenteredText(
+      this,
+      centerX,
+      15 * SCALE,
+      'EXPORT SAVE',
+      TextStyles.subtitle
+    );
+    title.setDepth(101);
+
+    // Get save data
+    const saveData = saveManager.exportSaveData();
+
+    // Show truncated preview
+    const previewLines = saveData.split('\n').slice(0, 8).join('\n');
+    const preview = createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT / 2 - 10 * SCALE,
+      previewLines + '\n...',
+      { ...TextStyles.body, fontSize: `${6 * SCALE}px`, lineSpacing: 1 * SCALE }
+    );
+    preview.setDepth(101);
+
+    // Copy to clipboard
+    try {
+      navigator.clipboard.writeText(saveData).then(() => {
+        const copied = createCenteredText(
+          this,
+          centerX,
+          GAME_CONFIG.GAME_HEIGHT - 35 * SCALE,
+          'Copied to clipboard!',
+          { ...TextStyles.hint, color: '#00ff00' }
+        );
+        copied.setDepth(101);
+        this.exportCopiedText = copied;
+      }).catch(() => {
+        // Clipboard API not available, show fallback message
+        const fallback = createCenteredText(
+          this,
+          centerX,
+          GAME_CONFIG.GAME_HEIGHT - 35 * SCALE,
+          'Check browser console for save data',
+          { ...TextStyles.hint, color: '#ffaa00' }
+        );
+        fallback.setDepth(101);
+        this.exportCopiedText = fallback;
+        console.log('=== BRICKWAVE SAVE DATA ===');
+        console.log(saveData);
+        console.log('=== END SAVE DATA ===');
+      });
+    } catch (e) {
+      // Fallback for browsers without clipboard API
+      console.log('=== BRICKWAVE SAVE DATA ===');
+      console.log(saveData);
+      console.log('=== END SAVE DATA ===');
+    }
+
+    const hint = createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT - 15 * SCALE,
+      'Press any key to close',
+      TextStyles.hint
+    );
+    hint.setDepth(101);
+
+    this.tweens.add({
+      targets: hint,
+      alpha: 0.3,
+      duration: 800,
+      yoyo: true,
+      repeat: -1
+    });
+
+    const cleanup = () => {
+      overlay.destroy();
+      title.destroy();
+      preview.destroy();
+      hint.destroy();
+      if (this.exportCopiedText) {
+        this.exportCopiedText.destroy();
+        this.exportCopiedText = null;
+      }
+    };
+
+    this.input.keyboard.once('keydown', cleanup);
+  }
+
+  /**
+   * Show import save overlay
+   */
+  showImportSave() {
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.95);
+    overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
+    overlay.setDepth(100);
+
+    const centerX = GAME_CONFIG.GAME_WIDTH / 2;
+
+    const title = createCenteredText(
+      this,
+      centerX,
+      20 * SCALE,
+      'IMPORT SAVE',
+      TextStyles.subtitle
+    );
+    title.setDepth(101);
+
+    const instructions = createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT / 2 - 20 * SCALE,
+      'Paste your save data\nfrom clipboard',
+      TextStyles.body
+    );
+    instructions.setDepth(101);
+
+    const statusText = createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT / 2 + 10 * SCALE,
+      'Press V to paste',
+      { ...TextStyles.hint, color: '#00ffff' }
+    );
+    statusText.setDepth(101);
+
+    const hint = createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT - 15 * SCALE,
+      'Esc: Cancel',
+      TextStyles.hint
+    );
+    hint.setDepth(101);
+
+    const cleanup = () => {
+      overlay.destroy();
+      title.destroy();
+      instructions.destroy();
+      statusText.destroy();
+      hint.destroy();
+      this.input.keyboard.off('keydown-V', handlePaste);
+      this.input.keyboard.off('keydown-ESC', handleCancel);
+    };
+
+    const handlePaste = () => {
+      navigator.clipboard.readText().then(text => {
+        // Initialize SaveManager
+        saveManager.init();
+
+        // Try to import
+        const result = saveManager.importSaveData(text);
+
+        if (result.success) {
+          statusText.setText('Import successful!');
+          statusText.setColor('#00ff00');
+
+          // Flash green and close
+          this.time.delayedCall(1000, cleanup);
+        } else {
+          statusText.setText(result.message);
+          statusText.setColor('#ff6666');
+        }
+      }).catch(err => {
+        statusText.setText('Clipboard access denied');
+        statusText.setColor('#ff6666');
+        console.error('Clipboard read error:', err);
+      });
+    };
+
+    const handleCancel = () => {
+      cleanup();
+    };
+
+    this.input.keyboard.on('keydown-V', handlePaste);
+    this.input.keyboard.on('keydown-ESC', handleCancel);
+  }
+
+  /**
    * Confirm reset progress
    */
   confirmResetProgress() {
@@ -536,7 +737,9 @@ export default class SettingsScene extends Phaser.Scene {
    */
   resetProgress() {
     try {
-      localStorage.removeItem('brickwave_progress');
+      // Initialize SaveManager and clear progress
+      saveManager.init();
+      saveManager.clearProgress();
       console.log('Progress reset!');
 
       // Show confirmation
