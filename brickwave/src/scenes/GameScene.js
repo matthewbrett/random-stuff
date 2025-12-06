@@ -113,6 +113,7 @@ export default class GameScene extends Phaser.Scene {
 
     // Level completion state
     this.levelComplete = false;
+    this.completionOverlay = null;
 
     // Setup camera with level boundaries
     this.cameras.main.setBounds(0, 0, levelInfo.width, levelInfo.height);
@@ -140,6 +141,28 @@ export default class GameScene extends Phaser.Scene {
     this.debugText = createSmoothText(this, 10 * SCALE, 10 * SCALE, '', TextStyles.debug);
     this.debugText.setScrollFactor(0);
     this.debugText.setDepth(1000);
+
+    // Setup shutdown handler to clean up before scene restart
+    this.events.once('shutdown', this.shutdown, this);
+  }
+
+  /**
+   * Clean up before scene shutdown/restart
+   */
+  shutdown() {
+    // Destroy HUD to remove event listeners
+    if (this.hud) {
+      this.hud.destroy();
+    }
+
+    // Clean up completion overlay if it exists
+    if (this.completionOverlay) {
+      this.completionOverlay.overlay.destroy();
+      this.completionOverlay.title.destroy();
+      this.completionOverlay.statsText.destroy();
+      this.completionOverlay.prompt.destroy();
+      this.completionOverlay = null;
+    }
   }
 
   setupPhaseBrickCollision() {
@@ -419,17 +442,153 @@ export default class GameScene extends Phaser.Scene {
       this.player.sprite.body.setVelocity(0, 0);
     }
 
-    // Show level complete HUD
+    // Show level complete screen after effects
     this.time.delayedCall(1000, () => {
-      if (this.hud) {
-        this.hud.showLevelComplete();
-      }
+      this.showCompletionScreen();
     });
 
     console.log('🎉 Level Complete!');
     console.log(`World ${this.currentWorld}-${this.currentLevel} completed!`);
     console.log(`Time: ${this.scoreManager.getFormattedTime()}`);
     console.log(`Key Shards: ${this.scoreManager.getKeyShardCount()}/3`);
+  }
+
+  /**
+   * Show level completion screen with stats
+   */
+  showCompletionScreen() {
+    // Create semi-transparent overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.8);
+    overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(2000);
+
+    // Title
+    const title = createSmoothText(
+      this,
+      GAME_CONFIG.GAME_WIDTH / 2,
+      40 * SCALE,
+      'LEVEL COMPLETE!',
+      TextStyles.title
+    );
+    title.setOrigin(0.5);
+    title.setScrollFactor(0);
+    title.setDepth(2001);
+
+    // Stats
+    const statsY = 70 * SCALE;
+    const lineHeight = 12 * SCALE;
+
+    const stats = [
+      `World ${this.currentWorld}-${this.currentLevel}`,
+      '',
+      `Time: ${this.scoreManager.getFormattedTime()}`,
+      `Key Shards: ${this.scoreManager.getKeyShardCount()}/3`,
+      '',
+      `Score: ${this.scoreManager.getScore()}`,
+      `Time Bonus: +${this.scoreManager.timeBonus}`,
+      `Style Bonus: +${Math.floor(this.scoreManager.styleBonus)}`,
+    ];
+
+    const statsText = createSmoothText(
+      this,
+      GAME_CONFIG.GAME_WIDTH / 2,
+      statsY,
+      stats.join('\n'),
+      TextStyles.body
+    );
+    statsText.setOrigin(0.5, 0);
+    statsText.setScrollFactor(0);
+    statsText.setDepth(2001);
+    statsText.setLineSpacing(lineHeight - statsText.style.fontSize);
+
+    // Continue prompt (pulsing)
+    const promptY = 150 * SCALE;
+    const prompt = createSmoothText(
+      this,
+      GAME_CONFIG.GAME_WIDTH / 2,
+      promptY,
+      'PRESS SPACE TO CONTINUE',
+      TextStyles.body
+    );
+    prompt.setOrigin(0.5);
+    prompt.setScrollFactor(0);
+    prompt.setDepth(2001);
+
+    // Pulse animation for prompt
+    this.tweens.add({
+      targets: prompt,
+      alpha: 0.3,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // Store overlay elements for cleanup
+    this.completionOverlay = {
+      overlay,
+      title,
+      statsText,
+      prompt
+    };
+
+    // Enable space key to continue
+    this.input.keyboard.once('keydown-SPACE', () => {
+      this.advanceToNextLevel();
+    });
+  }
+
+  /**
+   * Advance to the next level or end game
+   */
+  advanceToNextLevel() {
+    // Clean up completion overlay
+    if (this.completionOverlay) {
+      this.completionOverlay.overlay.destroy();
+      this.completionOverlay.title.destroy();
+      this.completionOverlay.statsText.destroy();
+      this.completionOverlay.prompt.destroy();
+      this.completionOverlay = null;
+    }
+
+    // Determine next level
+    let nextWorld = this.currentWorld;
+    let nextLevel = this.currentLevel + 1;
+
+    // Check if we need to advance to next world
+    if (nextLevel > 3) {
+      nextLevel = 1;
+      nextWorld++;
+    }
+
+    // Check if game is complete (only world 1 exists for MVP)
+    if (nextWorld > 1) {
+      console.log('🎊 Game Complete! All levels finished!');
+      // For now, restart from 1-1
+      nextWorld = 1;
+      nextLevel = 1;
+    }
+
+    const nextLevelKey = `level-${nextWorld}-${nextLevel}`;
+
+    // Check if next level exists
+    if (this.cache.json.has(nextLevelKey)) {
+      console.log(`📍 Loading next level: ${nextWorld}-${nextLevel}`);
+      this.scene.restart({
+        world: nextWorld,
+        level: nextLevel,
+        levelKey: nextLevelKey
+      });
+    } else {
+      console.log(`⚠️ Level ${nextLevelKey} not found. Restarting from 1-1.`);
+      this.scene.restart({
+        world: 1,
+        level: 1,
+        levelKey: 'level-1-1'
+      });
+    }
   }
 
   /**

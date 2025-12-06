@@ -340,6 +340,16 @@ export default class GameHUD {
    * Destroy HUD
    */
   destroy() {
+    // Remove all event listeners to prevent memory leaks
+    this.scene.events.off('scoreChanged');
+    this.scene.events.off('coinCollected');
+    this.scene.events.off('echoChargeGained');
+    this.scene.events.off('echoChargeUsed');
+    this.scene.events.off('styleBonusStart');
+    this.scene.events.off('styleBonusEnd');
+    this.scene.events.off('keyShardCollected');
+
+    // Destroy visual elements
     this.container.destroy();
   }
 }
