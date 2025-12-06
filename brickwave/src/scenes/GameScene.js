@@ -160,10 +160,10 @@ export default class GameScene extends Phaser.Scene {
     // Start level timer
     this.scoreManager.startTimer();
 
-    // Add debug text (scaled position)
-    this.debugText = createSmoothText(this, 10 * SCALE, 10 * SCALE, '', TextStyles.debug);
-    this.debugText.setScrollFactor(0);
-    this.debugText.setDepth(1000);
+    // Add debug text (scaled position) - DISABLED
+    // this.debugText = createSmoothText(this, 10 * SCALE, 10 * SCALE, '', TextStyles.debug);
+    // this.debugText.setScrollFactor(0);
+    // this.debugText.setDepth(1000);
 
     // Setup pause menu input
     this.setupPauseInput();
@@ -695,20 +695,20 @@ export default class GameScene extends Phaser.Scene {
                        Math.abs(this.player.sprite.body.velocity.y) > 10;
       this.scoreManager.updateStyleBonus(isMoving, delta);
 
-      // Update debug text
-      const phaseState = this.phaseManager ? this.phaseManager.getCurrentPhase(0) : 'N/A';
-      const echoCharges = this.scoreManager ? this.scoreManager.getEchoCharges() : 0;
-      const debugInfo = [
-        `Pos: ${Math.round(this.player.sprite.x)}, ${Math.round(this.player.sprite.y)}`,
-        `Vel: ${Math.round(this.player.sprite.body.velocity.x)}, ${Math.round(this.player.sprite.body.velocity.y)}`,
-        `Ground: ${this.player.isGrounded}`,
-        `Echo: ${echoCharges}`,
-        `Dash: ${this.player.isDashing ? 'YES' : 'NO'}`,
-        `Phase: ${phaseState}`,
-        `Score: ${this.scoreManager.getScore()}`,
-        `Coins: ${this.scoreManager.getCoinsCollected()}`,
-      ];
-      this.debugText.setText(debugInfo.join('\n'));
+      // Update debug text - DISABLED
+      // const phaseState = this.phaseManager ? this.phaseManager.getCurrentPhase(0) : 'N/A';
+      // const echoCharges = this.scoreManager ? this.scoreManager.getEchoCharges() : 0;
+      // const debugInfo = [
+      //   `Pos: ${Math.round(this.player.sprite.x)}, ${Math.round(this.player.sprite.y)}`,
+      //   `Vel: ${Math.round(this.player.sprite.body.velocity.x)}, ${Math.round(this.player.sprite.body.velocity.y)}`,
+      //   `Ground: ${this.player.isGrounded}`,
+      //   `Echo: ${echoCharges}`,
+      //   `Dash: ${this.player.isDashing ? 'YES' : 'NO'}`,
+      //   `Phase: ${phaseState}`,
+      //   `Score: ${this.scoreManager.getScore()}`,
+      //   `Coins: ${this.scoreManager.getCoinsCollected()}`,
+      // ];
+      // this.debugText.setText(debugInfo.join('\n'));
     }
 
     // Update HUD

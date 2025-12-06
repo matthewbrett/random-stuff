@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(lsof:*)",
+      "Bash(npx playwright:*)",
+      "Bash(node test-game.js:*)",
+      "Bash(npm install:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
