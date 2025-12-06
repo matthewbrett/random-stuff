@@ -72,6 +72,79 @@ export const TextStyles = {
     stroke: '#000000',
     strokeThickness: 2 * SCALE,
   },
+
+  // Menu item (unselected)
+  menuItem: {
+    ...baseStyle,
+    fontSize: `${14 * SCALE}px`,
+    color: '#888888',
+    align: 'center',
+  },
+
+  // Menu item (selected/highlighted)
+  menuItemSelected: {
+    ...baseStyle,
+    fontSize: `${14 * SCALE}px`,
+    color: '#00ffff',
+    stroke: '#0066aa',
+    strokeThickness: 1 * SCALE,
+    align: 'center',
+  },
+
+  // Body text for menus and dialogs
+  body: {
+    ...baseStyle,
+    fontSize: `${10 * SCALE}px`,
+    color: '#ffffff',
+    align: 'center',
+    lineSpacing: 4 * SCALE,
+  },
+
+  // Level select item
+  levelItem: {
+    ...baseStyle,
+    fontSize: `${12 * SCALE}px`,
+    color: '#ffffff',
+    stroke: '#000000',
+    strokeThickness: 2 * SCALE,
+    align: 'left',
+  },
+
+  // Level select item (locked)
+  levelItemLocked: {
+    ...baseStyle,
+    fontSize: `${12 * SCALE}px`,
+    color: '#666666',
+    stroke: '#000000',
+    strokeThickness: 2 * SCALE,
+    align: 'left',
+  },
+
+  // Settings label
+  settingsLabel: {
+    ...baseStyle,
+    fontSize: `${10 * SCALE}px`,
+    color: '#ffffff',
+    align: 'left',
+  },
+
+  // Settings value
+  settingsValue: {
+    ...baseStyle,
+    fontSize: `${10 * SCALE}px`,
+    color: '#00ffff',
+    align: 'right',
+  },
+
+  // Rank display (S, A, B, C)
+  rank: {
+    ...baseStyle,
+    fontSize: `${24 * SCALE}px`,
+    color: '#ffff00',
+    stroke: '#aa6600',
+    strokeThickness: 2 * SCALE,
+    align: 'center',
+  },
 };
 
 /**

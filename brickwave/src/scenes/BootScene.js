@@ -43,12 +43,12 @@ export default class BootScene extends Phaser.Scene {
 
     // Setup input
     this.input.keyboard.once('keydown-SPACE', () => {
-      this.scene.start('GameScene');
+      this.scene.start('TitleScene');
     });
 
     // Auto-start after 1 second for easier development
     this.time.delayedCall(1000, () => {
-      this.scene.start('GameScene');
+      this.scene.start('TitleScene');
     });
 
     // Display some debug info

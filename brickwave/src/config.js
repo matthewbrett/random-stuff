@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
+import TitleScene from './scenes/TitleScene.js';
+import LevelSelectScene from './scenes/LevelSelectScene.js';
+import SettingsScene from './scenes/SettingsScene.js';
 import GameScene from './scenes/GameScene.js';
 
 // Resolution mode detection
@@ -56,6 +59,9 @@ export const config = {
   // Scenes
   scene: [
     BootScene,
+    TitleScene,
+    LevelSelectScene,
+    SettingsScene,
     GameScene,
   ],
 

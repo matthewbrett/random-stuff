@@ -4,7 +4,7 @@
 
 **BRICKWAVE** is a browser-based pixel platformer game inspired by 80s underground runners, featuring a unique "phase brick" mechanic where blocks toggle between solid and ghost states on a rhythmic cycle.
 
-**Current Status**: Phase 7 Complete - Level Content fully implemented with 3 playable levels (1-1, 1-2, 1-3), Key Shards, level exits, and dynamic level loading, ready for Phase 8 (UI & Menus)
+**Current Status**: Phase 8 Complete - UI & Menus fully implemented with title screen, level select, settings, pause menu, instant restart, and results screen with rank display, ready for Phase 9 (Persistence & Polish)
 
 ## Key Information
 
@@ -82,8 +82,8 @@ The project follows a 10-phase plan outlined in `DEVELOPMENT_PLAN.md`:
 **Phase 5**: Collectibles & Scoring ✅
 **Phase 6**: Enemies & Combat ✅
 **Phase 7**: Level Content (World 1-1 to 1-3) ✅
-**Phase 8**: UI & Menus ⭐ ⬜
-**Phase 9**: Persistence & Polish ⬜
+**Phase 8**: UI & Menus ✅
+**Phase 9**: Persistence & Polish ⭐ ⬜
 **Phase 10**: Accessibility & Final MVP ⬜
 
 See `DEVELOPMENT_PLAN.md` for detailed task lists per phase.
@@ -191,7 +191,7 @@ Visually inspired by 80s games (think Lode Runner, Boulder Dash), but movement s
 
 ## Current State
 
-As of 2025-12-05:
+As of 2025-12-06:
 - ✅ **Phase 1 Complete**: Project structure, Phaser 3 setup, Vite dev environment
 - ✅ **Phase 2 Complete**: Full player movement with all mechanics (jump, dash, coyote time, jump buffer)
 - ✅ **Phase 3 Complete**: Level system with Tiled JSON loader, tile collision, one-way platforms, camera system
@@ -199,9 +199,15 @@ As of 2025-12-05:
 - ✅ **Phase 5 Complete**: Collectibles & Scoring system with coins, HUD, Echo Charges, and bonus tracking
 - ✅ **Phase 6 Complete**: Enemies & Combat with 3 enemy types, stomp/dash mechanics, EnemyManager system
 - ✅ **Phase 7 Complete**: Level Content with 3 playable levels, Key Shards, level exits, dynamic loading
-- 🎯 **Next Up**: Phase 8 - UI & Menus (title screen, level select, pause menu)
+- ✅ **Phase 8 Complete**: UI & Menus with title screen, level select, settings, pause menu, instant restart
+- 🎯 **Next Up**: Phase 9 - Persistence & Polish (save system, audio, particle effects)
 
 **Key Files**:
+- `src/scenes/TitleScene.js` - Title screen with animated logo, menu, floating particles
+- `src/scenes/LevelSelectScene.js` - Level selection with best times and key shards display
+- `src/scenes/SettingsScene.js` - Settings menu (volume, display, accessibility options)
+- `src/scenes/GameScene.js` - Main game scene with pause menu, instant restart, and results screen
+- `src/utils/TextStyles.js` - Centralized text styles for menus, HUD, and rank display
 - `src/entities/Player.js` - Complete player movement system (integrated with ScoreManager)
 - `src/entities/PhaseBrick.js` - Phase brick with visual feedback and collision states
 - `src/entities/Coin.js` - Collectible coins with pulsing/floating animation
@@ -217,7 +223,6 @@ As of 2025-12-05:
 - `src/systems/ScoreManager.js` - Score, coins, Echo Charges, Key Shards, and bonus tracking
 - `src/systems/GameHUD.js` - Complete HUD display with all game information (includes Key Shards)
 - `src/systems/EnemyManager.js` - Enemy spawning and collision management
-- `src/scenes/GameScene.js` - Main game scene with all systems integrated and dynamic level loading
 - `assets/levels/level-1-1.json` - Level 1-1: Catacomb Entrance (intro level)
 - `assets/levels/level-1-2.json` - Level 1-2: Phase Corridors (phase brick tutorial)
 - `assets/levels/level-1-3.json` - Level 1-3: The Vertical Descent (vertical challenge)
@@ -240,5 +245,5 @@ As of 2025-12-05:
 
 ---
 
-**Last Updated**: 2025-12-05
+**Last Updated**: 2025-12-06
 **For Questions**: See `Game spec.md` and `DEVELOPMENT_PLAN.md`
