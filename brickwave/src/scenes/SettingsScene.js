@@ -140,14 +140,20 @@ export default class SettingsScene extends Phaser.Scene {
    * Create settings list
    */
   createSettingsList() {
-    const startY = 35 * SCALE;
-    const leftX = 20 * SCALE;
-    const rightX = GAME_CONFIG.GAME_WIDTH - 20 * SCALE;
-    let currentY = startY;
-    const lineHeight = 12 * SCALE;
-    const separatorHeight = 6 * SCALE;
+    this.startY = 35 * SCALE;
+    this.leftX = 20 * SCALE;
+    this.rightX = GAME_CONFIG.GAME_WIDTH - 20 * SCALE;
+    this.lineHeight = 12 * SCALE;
+    this.separatorHeight = 6 * SCALE;
+    this.scrollOffset = 0;
 
+    // Define visible area for scrolling
+    this.visibleAreaTop = this.startY;
+    this.visibleAreaBottom = GAME_CONFIG.GAME_HEIGHT - 30 * SCALE; // Leave space for footer
+
+    let currentY = this.startY;
     this.settingItems = [];
+    this.separatorLines = [];
     let selectableIndex = 0;
 
     this.settingsDef.forEach((setting, defIndex) => {
@@ -155,14 +161,16 @@ export default class SettingsScene extends Phaser.Scene {
         // Draw separator line
         const line = this.add.graphics();
         line.lineStyle(1, 0x333333, 0.5);
-        line.lineBetween(leftX, currentY + separatorHeight / 2, rightX, currentY + separatorHeight / 2);
-        currentY += separatorHeight;
+        line.lineBetween(this.leftX, currentY + this.separatorHeight / 2, this.rightX, currentY + this.separatorHeight / 2);
+        this.separatorLines.push({ line, baseY: currentY });
+        currentY += this.separatorHeight;
         return;
       }
 
-      const item = this.createSettingItem(setting, leftX, rightX, currentY, selectableIndex);
+      const item = this.createSettingItem(setting, this.leftX, this.rightX, currentY, selectableIndex);
+      item.baseY = currentY; // Store base Y position for scrolling
       this.settingItems.push(item);
-      currentY += lineHeight;
+      currentY += this.lineHeight;
       selectableIndex++;
     });
 
@@ -296,7 +304,44 @@ export default class SettingsScene extends Phaser.Scene {
     if (newIndex !== this.selectedIndex) {
       this.selectedIndex = newIndex;
       this.updateSelection();
+      this.updateScroll();
     }
+  }
+
+  /**
+   * Update scroll position to keep selected item visible
+   */
+  updateScroll() {
+    const selectedItem = this.settingItems[this.selectedIndex];
+    if (!selectedItem) return;
+
+    const selectedY = selectedItem.baseY + this.scrollOffset;
+
+    // Check if selected item is below visible area
+    if (selectedY > this.visibleAreaBottom) {
+      this.scrollOffset -= (selectedY - this.visibleAreaBottom);
+    }
+    // Check if selected item is above visible area
+    else if (selectedY < this.visibleAreaTop) {
+      this.scrollOffset += (this.visibleAreaTop - selectedY);
+    }
+
+    // Apply scroll offset to all items
+    this.settingItems.forEach(item => {
+      const newY = item.baseY + this.scrollOffset;
+      item.label.y = newY;
+      if (item.valueText) {
+        item.valueText.y = newY;
+      }
+    });
+
+    // Apply scroll offset to separator lines
+    this.separatorLines.forEach(sep => {
+      const newY = sep.baseY + this.scrollOffset;
+      sep.line.clear();
+      sep.line.lineStyle(1, 0x333333, 0.5);
+      sep.line.lineBetween(this.leftX, newY + this.separatorHeight / 2, this.rightX, newY + this.separatorHeight / 2);
+    });
   }
 
   /**
@@ -354,7 +399,8 @@ export default class SettingsScene extends Phaser.Scene {
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.9);
     overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setDepth(100);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(1000);
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
     const centerY = GAME_CONFIG.GAME_HEIGHT / 2;
@@ -366,7 +412,8 @@ export default class SettingsScene extends Phaser.Scene {
       `Change resolution to ${newMode}?\nThis will reload the game.`,
       TextStyles.body
     );
-    message.setDepth(101);
+    message.setScrollFactor(0);
+    message.setDepth(1001);
 
     const hint = createCenteredText(
       this,
@@ -375,7 +422,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Enter: Confirm | Esc: Cancel',
       TextStyles.hint
     );
-    hint.setDepth(101);
+    hint.setScrollFactor(0);
+    hint.setDepth(1001);
 
     const cleanup = () => {
       overlay.destroy();
@@ -383,19 +431,22 @@ export default class SettingsScene extends Phaser.Scene {
       hint.destroy();
     };
 
-    // Confirm
-    this.input.keyboard.once('keydown-ENTER', () => {
-      cleanup();
-      setResolutionMode(newMode);
-    });
+    // Delay before enabling input to prevent the opening keypress from immediately triggering
+    this.time.delayedCall(100, () => {
+      // Confirm
+      this.input.keyboard.once('keydown-ENTER', () => {
+        cleanup();
+        setResolutionMode(newMode);
+      });
 
-    // Cancel
-    this.input.keyboard.once('keydown-ESC', () => {
-      cleanup();
-      // Revert setting
-      this.settings.resolution = RESOLUTION_MODE === 'polished' ? 1 : 0;
-      this.saveSettings();
-      this.updateItemDisplay(this.settingItems[this.selectedIndex]);
+      // Cancel
+      this.input.keyboard.once('keydown-ESC', () => {
+        cleanup();
+        // Revert setting
+        this.settings.resolution = RESOLUTION_MODE === 'polished' ? 1 : 0;
+        this.saveSettings();
+        this.updateItemDisplay(this.settingItems[this.selectedIndex]);
+      });
     });
   }
 
@@ -442,7 +493,8 @@ export default class SettingsScene extends Phaser.Scene {
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.95);
     overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setDepth(100);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(1000);
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
 
@@ -453,7 +505,8 @@ export default class SettingsScene extends Phaser.Scene {
       'CONTROLS',
       TextStyles.subtitle
     );
-    title.setDepth(101);
+    title.setScrollFactor(0);
+    title.setDepth(1001);
 
     const controls = [
       'MOVEMENT',
@@ -479,7 +532,8 @@ export default class SettingsScene extends Phaser.Scene {
       controls.join('\n'),
       { ...TextStyles.body, fontSize: `${8 * SCALE}px`, lineSpacing: 2 * SCALE }
     );
-    controlsText.setDepth(101);
+    controlsText.setScrollFactor(0);
+    controlsText.setDepth(1001);
 
     const hint = createCenteredText(
       this,
@@ -488,7 +542,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Press any key to close',
       TextStyles.hint
     );
-    hint.setDepth(101);
+    hint.setScrollFactor(0);
+    hint.setDepth(1001);
 
     this.tweens.add({
       targets: hint,
@@ -505,7 +560,10 @@ export default class SettingsScene extends Phaser.Scene {
       hint.destroy();
     };
 
-    this.input.keyboard.once('keydown', cleanup);
+    // Delay before enabling close to prevent the opening keypress from immediately closing
+    this.time.delayedCall(100, () => {
+      this.input.keyboard.once('keydown', cleanup);
+    });
   }
 
   /**
@@ -515,7 +573,8 @@ export default class SettingsScene extends Phaser.Scene {
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.95);
     overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setDepth(100);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(1000);
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
 
@@ -526,7 +585,8 @@ export default class SettingsScene extends Phaser.Scene {
       'HOW TO PLAY',
       TextStyles.subtitle
     );
-    title.setDepth(101);
+    title.setScrollFactor(0);
+    title.setDepth(1001);
 
     const content = [
       '═══ BASICS ═══',
@@ -556,7 +616,8 @@ export default class SettingsScene extends Phaser.Scene {
       content.join('\n'),
       { ...TextStyles.body, fontSize: `${6 * SCALE}px`, lineSpacing: 1 * SCALE }
     );
-    contentText.setDepth(101);
+    contentText.setScrollFactor(0);
+    contentText.setDepth(1001);
 
     const hint = createCenteredText(
       this,
@@ -565,7 +626,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Press any key to close',
       TextStyles.hint
     );
-    hint.setDepth(101);
+    hint.setScrollFactor(0);
+    hint.setDepth(1001);
 
     this.tweens.add({
       targets: hint,
@@ -582,7 +644,10 @@ export default class SettingsScene extends Phaser.Scene {
       hint.destroy();
     };
 
-    this.input.keyboard.once('keydown', cleanup);
+    // Delay before enabling close to prevent the opening keypress from immediately closing
+    this.time.delayedCall(100, () => {
+      this.input.keyboard.once('keydown', cleanup);
+    });
   }
 
   /**
@@ -595,7 +660,8 @@ export default class SettingsScene extends Phaser.Scene {
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.95);
     overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setDepth(100);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(1000);
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
 
@@ -606,7 +672,8 @@ export default class SettingsScene extends Phaser.Scene {
       'EXPORT SAVE',
       TextStyles.subtitle
     );
-    title.setDepth(101);
+    title.setScrollFactor(0);
+    title.setDepth(1001);
 
     // Get save data
     const saveData = saveManager.exportSaveData();
@@ -620,7 +687,8 @@ export default class SettingsScene extends Phaser.Scene {
       previewLines + '\n...',
       { ...TextStyles.body, fontSize: `${6 * SCALE}px`, lineSpacing: 1 * SCALE }
     );
-    preview.setDepth(101);
+    preview.setScrollFactor(0);
+    preview.setDepth(1001);
 
     // Copy to clipboard
     try {
@@ -632,7 +700,8 @@ export default class SettingsScene extends Phaser.Scene {
           'Copied to clipboard!',
           { ...TextStyles.hint, color: '#00ff00' }
         );
-        copied.setDepth(101);
+        copied.setScrollFactor(0);
+        copied.setDepth(1001);
         this.exportCopiedText = copied;
       }).catch(() => {
         // Clipboard API not available, show fallback message
@@ -643,7 +712,8 @@ export default class SettingsScene extends Phaser.Scene {
           'Check browser console for save data',
           { ...TextStyles.hint, color: '#ffaa00' }
         );
-        fallback.setDepth(101);
+        fallback.setScrollFactor(0);
+        fallback.setDepth(1001);
         this.exportCopiedText = fallback;
         console.log('=== BRICKWAVE SAVE DATA ===');
         console.log(saveData);
@@ -663,7 +733,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Press any key to close',
       TextStyles.hint
     );
-    hint.setDepth(101);
+    hint.setScrollFactor(0);
+    hint.setDepth(1001);
 
     this.tweens.add({
       targets: hint,
@@ -684,7 +755,10 @@ export default class SettingsScene extends Phaser.Scene {
       }
     };
 
-    this.input.keyboard.once('keydown', cleanup);
+    // Delay before enabling close to prevent the opening keypress from immediately closing
+    this.time.delayedCall(100, () => {
+      this.input.keyboard.once('keydown', cleanup);
+    });
   }
 
   /**
@@ -694,7 +768,8 @@ export default class SettingsScene extends Phaser.Scene {
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.95);
     overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setDepth(100);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(1000);
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
 
@@ -705,7 +780,8 @@ export default class SettingsScene extends Phaser.Scene {
       'IMPORT SAVE',
       TextStyles.subtitle
     );
-    title.setDepth(101);
+    title.setScrollFactor(0);
+    title.setDepth(1001);
 
     const instructions = createCenteredText(
       this,
@@ -714,7 +790,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Paste your save data\nfrom clipboard',
       TextStyles.body
     );
-    instructions.setDepth(101);
+    instructions.setScrollFactor(0);
+    instructions.setDepth(1001);
 
     const statusText = createCenteredText(
       this,
@@ -723,7 +800,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Press V to paste',
       { ...TextStyles.hint, color: '#00ffff' }
     );
-    statusText.setDepth(101);
+    statusText.setScrollFactor(0);
+    statusText.setDepth(1001);
 
     const hint = createCenteredText(
       this,
@@ -732,7 +810,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Esc: Cancel',
       TextStyles.hint
     );
-    hint.setDepth(101);
+    hint.setScrollFactor(0);
+    hint.setDepth(1001);
 
     const cleanup = () => {
       overlay.destroy();
@@ -773,8 +852,11 @@ export default class SettingsScene extends Phaser.Scene {
       cleanup();
     };
 
-    this.input.keyboard.on('keydown-V', handlePaste);
-    this.input.keyboard.on('keydown-ESC', handleCancel);
+    // Delay before enabling input to prevent the opening keypress from immediately triggering
+    this.time.delayedCall(100, () => {
+      this.input.keyboard.on('keydown-V', handlePaste);
+      this.input.keyboard.on('keydown-ESC', handleCancel);
+    });
   }
 
   /**
@@ -784,7 +866,8 @@ export default class SettingsScene extends Phaser.Scene {
     const overlay = this.add.graphics();
     overlay.fillStyle(0x000000, 0.9);
     overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setDepth(100);
+    overlay.setScrollFactor(0);
+    overlay.setDepth(1000);
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
     const centerY = GAME_CONFIG.GAME_HEIGHT / 2;
@@ -796,7 +879,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Reset all progress?\nThis cannot be undone!',
       { ...TextStyles.body, color: '#ff6666' }
     );
-    message.setDepth(101);
+    message.setScrollFactor(0);
+    message.setDepth(1001);
 
     const hint = createCenteredText(
       this,
@@ -805,7 +889,8 @@ export default class SettingsScene extends Phaser.Scene {
       'Enter: Confirm | Esc: Cancel',
       TextStyles.hint
     );
-    hint.setDepth(101);
+    hint.setScrollFactor(0);
+    hint.setDepth(1001);
 
     const cleanup = () => {
       overlay.destroy();
@@ -813,12 +898,15 @@ export default class SettingsScene extends Phaser.Scene {
       hint.destroy();
     };
 
-    this.input.keyboard.once('keydown-ENTER', () => {
-      cleanup();
-      this.resetProgress();
-    });
+    // Delay before enabling input to prevent the opening keypress from immediately triggering
+    this.time.delayedCall(100, () => {
+      this.input.keyboard.once('keydown-ENTER', () => {
+        cleanup();
+        this.resetProgress();
+      });
 
-    this.input.keyboard.once('keydown-ESC', cleanup);
+      this.input.keyboard.once('keydown-ESC', cleanup);
+    });
   }
 
   /**
