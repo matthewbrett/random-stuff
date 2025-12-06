@@ -188,7 +188,23 @@ export default class LevelLoader {
    * Get tile color based on tile ID and type
    */
   getTileColor(tileId, layerType) {
-    // Color palette for different tile types
+    // Check if level has forest theme
+    const isForestTheme = this.levelData.properties && this.levelData.properties.theme === 'forest';
+
+    if (isForestTheme) {
+      // Forest theme palette
+      const forestColors = {
+        1: 0x4a5568,  // Standard grey (unused in forest)
+        2: 0x5a6c7a,  // Grey rocks (cave entrance)
+        3: 0x87CEEB,  // Sky blue (background)
+        4: 0x8B7355,  // Brown soil
+        5: 0x2d8659,  // Grass green
+        6: 0x654321,  // Dark brown (dirt/underground)
+      };
+      return forestColors[tileId] || 0x4a5568;
+    }
+
+    // Default catacomb theme palette
     const colors = {
       solid: [0x4a5568, 0x64748b, 0x475569],
       oneway: [0x94a3b8, 0xa8b8cc],

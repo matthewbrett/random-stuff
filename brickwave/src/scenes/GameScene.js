@@ -35,6 +35,7 @@ export default class GameScene extends Phaser.Scene {
     console.log('🎮 GameScene: Preloading assets...');
 
     // Load all levels
+    this.load.json('level-intro', '/assets/levels/level-intro.json');
     this.load.json('level-1-1', '/assets/levels/level-1-1.json');
     this.load.json('level-1-2', '/assets/levels/level-1-2.json');
     this.load.json('level-1-3', '/assets/levels/level-1-3.json');
@@ -1214,6 +1215,17 @@ export default class GameScene extends Phaser.Scene {
    * Advance to the next level or end game
    */
   advanceToNextLevel() {
+    // Special case: Intro level advances to 1-1
+    if (this.currentWorld === 0 && this.currentLevel === 0) {
+      console.log('📍 Completing intro level, advancing to 1-1');
+      this.scene.restart({
+        world: 1,
+        level: 1,
+        levelKey: 'level-1-1'
+      });
+      return;
+    }
+
     // Determine next level
     let nextWorld = this.currentWorld;
     let nextLevel = this.currentLevel + 1;

@@ -21,6 +21,7 @@ export default class LevelSelectScene extends Phaser.Scene {
 
     // Level data (will be enhanced with save system in Phase 9)
     this.levels = [
+      { id: 'intro', name: 'Forest Path', unlocked: true, bestTime: null, keyShards: 0 },
       { id: '1-1', name: 'Catacomb Entrance', unlocked: true, bestTime: null, keyShards: 0 },
       { id: '1-2', name: 'Phase Corridors', unlocked: true, bestTime: null, keyShards: 0 },
       { id: '1-3', name: 'The Vertical Descent', unlocked: true, bestTime: null, keyShards: 0 },
@@ -86,7 +87,7 @@ export default class LevelSelectScene extends Phaser.Scene {
     // Log total progress
     const completedCount = saveManager.getCompletedLevelCount();
     const totalShards = saveManager.getTotalKeyShards();
-    console.log(`📊 Progress: ${completedCount}/3 levels, ${totalShards}/9 key shards`);
+    console.log(`📊 Progress: ${completedCount}/4 levels, ${totalShards}/11 key shards`);
   }
 
   /**
@@ -393,8 +394,14 @@ export default class LevelSelectScene extends Phaser.Scene {
     // Play confirm sound
     audioManager.playMenuConfirm();
 
-    // Parse level ID
-    const [world, level] = selectedLevel.id.split('-').map(Number);
+    // Parse level ID (handle special "intro" case)
+    let world, level;
+    if (selectedLevel.id === 'intro') {
+      world = 0;
+      level = 0;
+    } else {
+      [world, level] = selectedLevel.id.split('-').map(Number);
+    }
 
     // Flash and transition
     this.cameras.main.flash(100, 0, 255, 255);
