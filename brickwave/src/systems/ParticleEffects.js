@@ -340,6 +340,63 @@ class ParticleEffects {
   }
 
   /**
+   * Create player death effect (cyan particles)
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   */
+  createPlayerDeath(x, y) {
+    if (!this.scene) return;
+
+    const colors = [0x00ffff, 0x006666, 0xffffff, 0x00ff88];
+    const numParticles = 16;
+
+    // Expanding ring effect
+    const ring = this.scene.add.graphics();
+    ring.lineStyle(2 * SCALE, 0x00ffff, 1);
+    ring.strokeCircle(0, 0, 6 * SCALE);
+    ring.setPosition(x, y);
+    ring.setDepth(2000);
+
+    this.scene.tweens.add({
+      targets: ring,
+      scaleX: 4,
+      scaleY: 4,
+      alpha: 0,
+      duration: 400,
+      ease: 'Power2',
+      onComplete: () => ring.destroy()
+    });
+
+    // Burst particles
+    for (let i = 0; i < numParticles; i++) {
+      const angle = (i / numParticles) * Math.PI * 2 + Math.random() * 0.3;
+      const speed = Phaser.Math.Between(60, 140) * SCALE;
+      const color = Phaser.Math.RND.pick(colors);
+      const size = Phaser.Math.Between(2, 5) * SCALE;
+
+      const particle = this.scene.add.graphics();
+      particle.fillStyle(color, 1);
+      particle.fillRect(0, 0, size, size);
+      particle.setPosition(x - size / 2, y - size / 2);
+      particle.setDepth(2000);
+
+      const vx = Math.cos(angle) * speed;
+      const vy = Math.sin(angle) * speed;
+
+      this.scene.tweens.add({
+        targets: particle,
+        x: x + vx,
+        y: y + vy + 20 * SCALE, // Gravity effect
+        alpha: 0,
+        rotation: Math.random() * Math.PI * 4,
+        duration: 500,
+        ease: 'Power2',
+        onComplete: () => particle.destroy()
+      });
+    }
+  }
+
+  /**
    * Create level complete celebration effect
    * @param {number} x - X position (usually player position)
    * @param {number} y - Y position

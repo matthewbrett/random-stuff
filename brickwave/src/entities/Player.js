@@ -18,22 +18,20 @@ export default class Player {
   constructor(scene, x, y) {
     this.scene = scene;
 
-    // Create player sprite (placeholder rectangle)
-    this.sprite = scene.physics.add.sprite(x, y, null);
+    // Create animated player sprite textures
+    this.createPlayerTextures();
 
-    // Create a simple rectangle for the player (8x8 pixels, scaled)
-    const playerSize = 8 * SCALE;
-    const graphics = scene.add.graphics();
-    graphics.fillStyle(0x00ffff, 1); // Cyan color
-    graphics.fillRect(0, 0, playerSize, playerSize);
-    graphics.generateTexture('player', playerSize, playerSize);
-    graphics.destroy();
-
-    this.sprite.setTexture('player');
+    // Create player sprite
+    this.sprite = scene.physics.add.sprite(x, y, 'player_idle');
     this.sprite.setOrigin(0.5, 0.5);
 
-    // Physics properties
-    this.sprite.body.setSize(playerSize, playerSize);
+    // Setup animations
+    this.setupAnimations();
+
+    // Physics properties - 16x16 sprite but smaller hitbox for fairness
+    const hitboxSize = 12 * SCALE;
+    this.sprite.body.setSize(hitboxSize, 14 * SCALE);
+    this.sprite.body.setOffset((16 * SCALE - hitboxSize) / 2, 2 * SCALE);
     this.sprite.body.setCollideWorldBounds(true);
     this.sprite.body.setMaxVelocity(200 * SCALE, 500 * SCALE);
 
@@ -81,6 +79,15 @@ export default class Player {
     // Crouch state
     this.isCrouching = false;
 
+    // Health system
+    this.maxHealth = 4;
+    this.currentHealth = this.maxHealth;
+    this.isInvincible = false;
+    this.invincibilityTimer = 0;
+    this.invincibilityDuration = 1500; // 1.5 seconds
+    this.isDead = false;
+    this.flashTween = null;
+
     // Input setup
     this.setupInput();
 
@@ -121,6 +128,291 @@ export default class Player {
   }
 
   /**
+   * Create all player sprite textures using procedural pixel art
+   * Cat character with light armor - 16x16 pixels
+   */
+  createPlayerTextures() {
+    // Skip if textures already exist
+    if (this.scene.textures.exists('player_idle')) return;
+
+    const size = 16 * SCALE;
+    const graphics = this.scene.add.graphics();
+
+    // Color palette
+    const colors = {
+      fur: 0x00ffff,        // Cyan fur
+      furDark: 0x006666,    // Dark cyan shadows
+      armor: 0xc0c0c0,      // Silver armor
+      armorDark: 0x808080,  // Dark armor shadows
+      highlight: 0xffffff,  // White highlights
+      eye: 0xff00ff,        // Magenta eye
+    };
+
+    // Create idle frame
+    this.drawCatIdle(graphics, size, colors);
+    graphics.generateTexture('player_idle', size, size);
+    graphics.clear();
+
+    // Create run frames (4 frames)
+    for (let i = 0; i < 4; i++) {
+      this.drawCatRun(graphics, size, colors, i);
+      graphics.generateTexture(`player_run_${i}`, size, size);
+      graphics.clear();
+    }
+
+    // Create jump frame
+    this.drawCatJump(graphics, size, colors);
+    graphics.generateTexture('player_jump', size, size);
+    graphics.clear();
+
+    // Create fall frame
+    this.drawCatFall(graphics, size, colors);
+    graphics.generateTexture('player_fall', size, size);
+    graphics.clear();
+
+    graphics.destroy();
+  }
+
+  /**
+   * Draw idle cat sprite
+   */
+  drawCatIdle(graphics, size, colors) {
+    const px = SCALE; // Pixel size
+
+    // Body (standing upright, slightly hunched)
+    graphics.fillStyle(colors.fur, 1);
+    // Main body
+    graphics.fillRect(5 * px, 7 * px, 6 * px, 6 * px);
+    // Head
+    graphics.fillRect(4 * px, 2 * px, 8 * px, 6 * px);
+
+    // Ears (pointed)
+    graphics.fillRect(4 * px, 0, 2 * px, 3 * px);
+    graphics.fillRect(10 * px, 0, 2 * px, 3 * px);
+
+    // Dark fur shadows
+    graphics.fillStyle(colors.furDark, 1);
+    graphics.fillRect(4 * px, 5 * px, 1 * px, 3 * px);
+    graphics.fillRect(6 * px, 11 * px, 4 * px, 2 * px);
+
+    // Armor (chest plate)
+    graphics.fillStyle(colors.armor, 1);
+    graphics.fillRect(6 * px, 7 * px, 4 * px, 4 * px);
+
+    // Armor highlight
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(6 * px, 7 * px, 1 * px, 2 * px);
+
+    // Armor shadow
+    graphics.fillStyle(colors.armorDark, 1);
+    graphics.fillRect(9 * px, 9 * px, 1 * px, 2 * px);
+
+    // Eye
+    graphics.fillStyle(colors.eye, 1);
+    graphics.fillRect(9 * px, 4 * px, 2 * px, 2 * px);
+
+    // Eye highlight
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(9 * px, 4 * px, 1 * px, 1 * px);
+
+    // Legs
+    graphics.fillStyle(colors.fur, 1);
+    graphics.fillRect(5 * px, 13 * px, 2 * px, 3 * px);
+    graphics.fillRect(9 * px, 13 * px, 2 * px, 3 * px);
+
+    // Tail (curled up)
+    graphics.fillRect(2 * px, 9 * px, 3 * px, 2 * px);
+    graphics.fillRect(1 * px, 7 * px, 2 * px, 3 * px);
+  }
+
+  /**
+   * Draw running cat sprite frame
+   */
+  drawCatRun(graphics, size, colors, frame) {
+    const px = SCALE;
+    const legOffset = [0, 1, 0, -1][frame]; // Leg animation cycle
+    const tailOffset = [0, 1, 2, 1][frame]; // Tail swish
+
+    // Body (leaning forward)
+    graphics.fillStyle(colors.fur, 1);
+    // Main body
+    graphics.fillRect(4 * px, 6 * px, 8 * px, 5 * px);
+    // Head (forward)
+    graphics.fillRect(8 * px, 2 * px, 6 * px, 5 * px);
+
+    // Ears
+    graphics.fillRect(9 * px, 0, 2 * px, 3 * px);
+    graphics.fillRect(12 * px, 1 * px, 2 * px, 2 * px);
+
+    // Dark fur shadows
+    graphics.fillStyle(colors.furDark, 1);
+    graphics.fillRect(4 * px, 9 * px, 2 * px, 2 * px);
+
+    // Armor
+    graphics.fillStyle(colors.armor, 1);
+    graphics.fillRect(6 * px, 6 * px, 4 * px, 4 * px);
+
+    // Armor highlight
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(6 * px, 6 * px, 1 * px, 2 * px);
+
+    // Eye
+    graphics.fillStyle(colors.eye, 1);
+    graphics.fillRect(12 * px, 3 * px, 2 * px, 2 * px);
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(12 * px, 3 * px, 1 * px, 1 * px);
+
+    // Legs (animated)
+    graphics.fillStyle(colors.fur, 1);
+    // Front legs
+    graphics.fillRect((10 + legOffset) * px, 11 * px, 2 * px, 5 * px);
+    graphics.fillRect((7 - legOffset) * px, 11 * px, 2 * px, 5 * px);
+    // Back legs
+    graphics.fillRect((4 + legOffset) * px, 11 * px, 2 * px, 5 * px);
+
+    // Tail (swishing)
+    graphics.fillRect((1 + tailOffset) * px, 5 * px, 4 * px, 2 * px);
+    graphics.fillRect(tailOffset * px, 4 * px, 2 * px, 2 * px);
+  }
+
+  /**
+   * Draw jumping cat sprite (pouncing pose)
+   */
+  drawCatJump(graphics, size, colors) {
+    const px = SCALE;
+
+    // Body (stretched upward)
+    graphics.fillStyle(colors.fur, 1);
+    // Main body (vertical)
+    graphics.fillRect(5 * px, 5 * px, 6 * px, 8 * px);
+    // Head (looking up)
+    graphics.fillRect(4 * px, 0, 8 * px, 6 * px);
+
+    // Ears (alert)
+    graphics.fillRect(3 * px, 0, 2 * px, 2 * px);
+    graphics.fillRect(11 * px, 0, 2 * px, 2 * px);
+
+    // Dark shadows
+    graphics.fillStyle(colors.furDark, 1);
+    graphics.fillRect(5 * px, 11 * px, 2 * px, 2 * px);
+
+    // Armor
+    graphics.fillStyle(colors.armor, 1);
+    graphics.fillRect(6 * px, 6 * px, 4 * px, 4 * px);
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(6 * px, 6 * px, 1 * px, 2 * px);
+
+    // Eye
+    graphics.fillStyle(colors.eye, 1);
+    graphics.fillRect(9 * px, 2 * px, 2 * px, 2 * px);
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(9 * px, 2 * px, 1 * px, 1 * px);
+
+    // Legs (tucked)
+    graphics.fillStyle(colors.fur, 1);
+    graphics.fillRect(4 * px, 13 * px, 3 * px, 2 * px);
+    graphics.fillRect(9 * px, 13 * px, 3 * px, 2 * px);
+
+    // Tail (extended behind)
+    graphics.fillRect(1 * px, 8 * px, 4 * px, 2 * px);
+    graphics.fillRect(0, 6 * px, 2 * px, 3 * px);
+  }
+
+  /**
+   * Draw falling cat sprite (splayed limbs)
+   */
+  drawCatFall(graphics, size, colors) {
+    const px = SCALE;
+
+    // Body (spread out)
+    graphics.fillStyle(colors.fur, 1);
+    // Main body (horizontal-ish)
+    graphics.fillRect(4 * px, 5 * px, 8 * px, 5 * px);
+    // Head
+    graphics.fillRect(6 * px, 1 * px, 6 * px, 5 * px);
+
+    // Ears (flattened)
+    graphics.fillRect(5 * px, 1 * px, 2 * px, 2 * px);
+    graphics.fillRect(11 * px, 1 * px, 2 * px, 2 * px);
+
+    // Dark shadows
+    graphics.fillStyle(colors.furDark, 1);
+    graphics.fillRect(4 * px, 8 * px, 2 * px, 2 * px);
+
+    // Armor
+    graphics.fillStyle(colors.armor, 1);
+    graphics.fillRect(6 * px, 5 * px, 4 * px, 4 * px);
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(6 * px, 5 * px, 1 * px, 2 * px);
+
+    // Eye (wide, surprised)
+    graphics.fillStyle(colors.eye, 1);
+    graphics.fillRect(10 * px, 2 * px, 2 * px, 2 * px);
+    graphics.fillStyle(colors.highlight, 1);
+    graphics.fillRect(10 * px, 2 * px, 1 * px, 1 * px);
+
+    // Legs (splayed outward)
+    graphics.fillStyle(colors.fur, 1);
+    // Front paws reaching
+    graphics.fillRect(12 * px, 8 * px, 3 * px, 2 * px);
+    graphics.fillRect(14 * px, 9 * px, 2 * px, 3 * px);
+    // Back paws
+    graphics.fillRect(1 * px, 8 * px, 3 * px, 2 * px);
+    graphics.fillRect(0, 9 * px, 2 * px, 3 * px);
+
+    // Tail (up for balance)
+    graphics.fillRect(2 * px, 2 * px, 2 * px, 4 * px);
+    graphics.fillRect(1 * px, 0, 2 * px, 3 * px);
+  }
+
+  /**
+   * Setup player animations
+   */
+  setupAnimations() {
+    // Idle animation (single frame)
+    if (!this.scene.anims.exists('player_idle')) {
+      this.scene.anims.create({
+        key: 'player_idle',
+        frames: [{ key: 'player_idle' }],
+        frameRate: 10
+      });
+    }
+
+    // Run animation (4 frames)
+    if (!this.scene.anims.exists('player_run')) {
+      this.scene.anims.create({
+        key: 'player_run',
+        frames: [
+          { key: 'player_run_0' },
+          { key: 'player_run_1' },
+          { key: 'player_run_2' },
+          { key: 'player_run_3' }
+        ],
+        frameRate: 12,
+        repeat: -1
+      });
+    }
+
+    // Jump animation (single frame)
+    if (!this.scene.anims.exists('player_jump')) {
+      this.scene.anims.create({
+        key: 'player_jump',
+        frames: [{ key: 'player_jump' }],
+        frameRate: 10
+      });
+    }
+
+    // Fall animation (single frame)
+    if (!this.scene.anims.exists('player_fall')) {
+      this.scene.anims.create({
+        key: 'player_fall',
+        frames: [{ key: 'player_fall' }],
+        frameRate: 10
+      });
+    }
+  }
+
+  /**
    * Check if player should collide with one-way platform
    * Only collide if:
    * - Player is moving downward
@@ -144,6 +436,19 @@ export default class Player {
   }
 
   update(time, delta) {
+    // Skip all updates if dead
+    if (this.isDead) {
+      return;
+    }
+
+    // Update invincibility timer
+    if (this.isInvincible) {
+      this.invincibilityTimer += delta;
+      if (this.invincibilityTimer >= this.invincibilityDuration) {
+        this.endInvincibility();
+      }
+    }
+
     // Update grounded state
     this.updateGroundedState(time);
 
@@ -159,6 +464,32 @@ export default class Player {
 
     // Apply friction when on ground
     this.applyFriction(delta);
+
+    // Update animation state
+    this.updateAnimation();
+  }
+
+  /**
+   * Update player animation based on movement state
+   */
+  updateAnimation() {
+    if (this.isDead || this.isDashing) return;
+
+    // Determine animation based on state
+    if (!this.isGrounded) {
+      // In the air
+      if (this.sprite.body.velocity.y < 0) {
+        this.sprite.play('player_jump', true);
+      } else {
+        this.sprite.play('player_fall', true);
+      }
+    } else if (Math.abs(this.sprite.body.velocity.x) > 5) {
+      // Running on ground
+      this.sprite.play('player_run', true);
+    } else {
+      // Idle on ground
+      this.sprite.play('player_idle', true);
+    }
   }
 
   updateGroundedState(time) {
@@ -348,5 +679,144 @@ export default class Player {
 
   setPosition(x, y) {
     this.sprite.setPosition(x, y);
+  }
+
+  // Health system methods
+
+  /**
+   * Set max health (called from GameScene based on difficulty)
+   * @param {number} maxHealth - Maximum health (3-5)
+   */
+  setMaxHealth(maxHealth) {
+    this.maxHealth = maxHealth;
+    this.currentHealth = maxHealth;
+  }
+
+  /**
+   * Take damage from enemy or hazard
+   * @returns {boolean} True if damage was taken, false if invincible
+   */
+  takeDamage() {
+    // Can't take damage if already invincible, dead, or level is complete
+    if (this.isInvincible || this.isDead) {
+      return false;
+    }
+
+    // Check if level is complete (prevent damage after exit)
+    if (this.scene.levelComplete) {
+      return false;
+    }
+
+    // Decrement health
+    this.currentHealth--;
+
+    // Emit health changed event
+    this.scene.events.emit('healthChanged', this.currentHealth, this.maxHealth);
+
+    // Play hurt sound
+    audioManager.playHurt();
+
+    // Check for death
+    if (this.currentHealth <= 0) {
+      this.die();
+      return true;
+    }
+
+    // Start invincibility frames
+    this.startInvincibility();
+
+    return true;
+  }
+
+  /**
+   * Start invincibility frames after taking damage
+   */
+  startInvincibility() {
+    this.isInvincible = true;
+    this.invincibilityTimer = 0;
+
+    // Flash effect - alternate visibility
+    if (this.flashTween) {
+      this.flashTween.stop();
+    }
+
+    this.flashTween = this.scene.tweens.add({
+      targets: this.sprite,
+      alpha: { from: 1, to: 0.3 },
+      duration: 100,
+      yoyo: true,
+      repeat: Math.floor(this.invincibilityDuration / 200),
+      onComplete: () => {
+        this.sprite.alpha = 1;
+      }
+    });
+  }
+
+  /**
+   * End invincibility frames
+   */
+  endInvincibility() {
+    this.isInvincible = false;
+    this.invincibilityTimer = 0;
+
+    // Stop flash effect
+    if (this.flashTween) {
+      this.flashTween.stop();
+      this.flashTween = null;
+    }
+
+    // Ensure sprite is fully visible
+    this.sprite.alpha = 1;
+    this.sprite.clearTint();
+  }
+
+  /**
+   * Handle player death
+   */
+  die() {
+    if (this.isDead) return;
+
+    this.isDead = true;
+
+    // Stop movement
+    this.sprite.body.setVelocity(0, 0);
+    this.sprite.body.setAcceleration(0, 0);
+
+    // Play death sound
+    audioManager.playPlayerDeath();
+
+    // Create death particles
+    particleEffects.createPlayerDeath(this.sprite.x, this.sprite.y);
+
+    // Death animation - fade and shrink
+    this.scene.tweens.add({
+      targets: this.sprite,
+      alpha: 0,
+      scaleX: 0.5,
+      scaleY: 0.5,
+      rotation: Math.PI,
+      duration: 500,
+      ease: 'Power2',
+      onComplete: () => {
+        // Emit player died event
+        this.scene.events.emit('playerDied');
+      }
+    });
+  }
+
+  /**
+   * Get current health
+   * @returns {number} Current health
+   */
+  getHealth() {
+    return this.currentHealth;
+  }
+
+  /**
+   * Get max health
+   * @returns {number} Max health
+   */
+  getMaxHealth() {
+    return this.maxHealth;
   }
 }

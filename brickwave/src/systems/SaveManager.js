@@ -376,6 +376,25 @@ class SaveManager {
   }
 
   /**
+   * Get difficulty setting (0=Easy, 1=Intermediate, 2=Hard)
+   * @returns {number} Difficulty level
+   */
+  getDifficulty() {
+    const settings = this.getSettings();
+    return settings?.difficulty ?? 1; // Default to Intermediate
+  }
+
+  /**
+   * Get max health based on difficulty
+   * @returns {number} Max health (5, 4, or 3)
+   */
+  getMaxHealthForDifficulty() {
+    const difficulty = this.getDifficulty();
+    const healthMap = [5, 4, 3]; // Easy, Intermediate, Hard
+    return healthMap[difficulty] ?? 4;
+  }
+
+  /**
    * Clear all progress data (keep settings)
    */
   clearProgress() {
