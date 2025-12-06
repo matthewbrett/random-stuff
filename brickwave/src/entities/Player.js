@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
 import audioManager from '../systems/AudioManager.js';
 import particleEffects from '../systems/ParticleEffects.js';
+import inputManager from '../systems/InputManager.js';
+import saveManager from '../systems/SaveManager.js';
 
 /**
  * Player - The player character with feel-first movement controls
@@ -98,10 +100,15 @@ export default class Player {
   setupInput() {
     const scene = this.scene;
 
-    // Create keyboard cursors
+    // Initialize input manager if not already done
+    if (!inputManager.initialized) {
+      inputManager.init(scene);
+    }
+
+    // Create keyboard cursors as fallback
     this.cursors = scene.input.keyboard.createCursorKeys();
 
-    // Additional keys
+    // Additional keys as fallback
     this.keys = {
       left: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
       right: scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
@@ -425,8 +432,8 @@ export default class Player {
     const isMovingDown = player.body.velocity.y >= 0;
     const isAbovePlatform = player.body.prev.y + player.body.height <= platformTop + 4;
 
-    // Allow drop-through when pressing down
-    const pressingDown = this.cursors.down.isDown || this.keys.down.isDown;
+    // Allow drop-through when pressing down (using inputManager)
+    const pressingDown = inputManager.isDown('down');
     if (pressingDown && this.isGrounded && isAbovePlatform) {
       return false;
     }
@@ -513,8 +520,9 @@ export default class Player {
 
   handleHorizontalMovement(delta) {
     const body = this.sprite.body;
-    const leftPressed = this.cursors.left.isDown || this.keys.left.isDown;
-    const rightPressed = this.cursors.right.isDown || this.keys.right.isDown;
+    // Use inputManager for unified input (keyboard + touch)
+    const leftPressed = inputManager.isDown('left');
+    const rightPressed = inputManager.isDown('right');
 
     // Determine acceleration based on whether player is grounded
     const accel = this.isGrounded ? this.acceleration : this.airAcceleration;
@@ -534,9 +542,9 @@ export default class Player {
   }
 
   handleJump(time, delta) {
-    const jumpPressed = this.cursors.up.isDown || this.keys.jump.isDown;
-    const jumpJustPressed = Phaser.Input.Keyboard.JustDown(this.cursors.up) ||
-                            Phaser.Input.Keyboard.JustDown(this.keys.jump);
+    // Use inputManager for unified input (keyboard + touch)
+    const jumpPressed = inputManager.isDown('jump');
+    const jumpJustPressed = inputManager.justDown('jump');
 
     // Jump buffer - remember jump input for a short time
     if (jumpJustPressed) {
@@ -578,7 +586,8 @@ export default class Player {
   }
 
   handleDash(time, delta) {
-    const dashPressed = Phaser.Input.Keyboard.JustDown(this.keys.dash);
+    // Use inputManager for unified input (keyboard + touch)
+    const dashPressed = inputManager.justDown('dash');
 
     // Get echo charges from score manager
     const hasCharges = this.scoreManager ? this.scoreManager.getEchoCharges() > 0 : false;
@@ -644,7 +653,8 @@ export default class Player {
   }
 
   handleCrouch() {
-    const downPressed = this.cursors.down.isDown || this.keys.down.isDown;
+    // Use inputManager for unified input (keyboard + touch)
+    const downPressed = inputManager.isDown('down');
 
     this.isCrouching = downPressed && this.isGrounded;
 
@@ -704,6 +714,19 @@ export default class Player {
 
     // Check if level is complete (prevent damage after exit)
     if (this.scene.levelComplete) {
+      return false;
+    }
+
+    // Check if invincibility assist mode is enabled
+    if (saveManager.isInvincibilityEnabled()) {
+      // Flash effect to show damage was "blocked"
+      this.scene.tweens.add({
+        targets: this.sprite,
+        alpha: { from: 1, to: 0.5 },
+        duration: 100,
+        yoyo: true,
+        repeat: 1
+      });
       return false;
     }
 

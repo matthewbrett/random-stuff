@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PhaseState } from '../systems/PhaseManager.js';
-import { GAME_CONFIG } from '../config.js';
+import { GAME_CONFIG, SCALE } from '../config.js';
+import saveManager from '../systems/SaveManager.js';
 
 /**
  * PhaseBrick - A tile that toggles between solid and ghost states
@@ -32,6 +33,13 @@ export default class PhaseBrick {
     // Shimmer overlay for visual feedback
     this.shimmer = scene.add.rectangle(x, y, tileSize, tileSize, 0xffffff);
     this.shimmer.setAlpha(0);
+
+    // Colorblind mode pattern overlay
+    this.colorblindMode = saveManager.isColorblindModeEnabled();
+    this.patternGraphics = scene.add.graphics();
+    if (this.colorblindMode) {
+      this.drawSolidPattern(); // Start with solid pattern
+    }
 
     // Physics body for collision (starts as solid)
     // The brick is already at world position (x, y), so physics body will be there too
@@ -76,6 +84,61 @@ export default class PhaseBrick {
       yoyo: true,
       ease: 'Cubic.easeOut',
     });
+
+    // Update colorblind pattern
+    if (this.colorblindMode) {
+      if (newState === PhaseState.SOLID) {
+        this.drawSolidPattern();
+      } else {
+        this.drawGhostPattern();
+      }
+    }
+  }
+
+  /**
+   * Draw solid pattern for colorblind mode (diagonal lines)
+   */
+  drawSolidPattern() {
+    this.patternGraphics.clear();
+    this.patternGraphics.lineStyle(1, 0xffffff, 0.4);
+
+    const size = this.tileSize;
+    const startX = this.x - size / 2;
+    const startY = this.y - size / 2;
+
+    // Draw diagonal lines going one direction (solid = forward slash)
+    for (let i = -size; i < size * 2; i += 3 * SCALE) {
+      this.patternGraphics.lineBetween(
+        startX + i,
+        startY,
+        startX + i + size,
+        startY + size
+      );
+    }
+  }
+
+  /**
+   * Draw ghost pattern for colorblind mode (dots)
+   */
+  drawGhostPattern() {
+    this.patternGraphics.clear();
+    this.patternGraphics.fillStyle(0xffffff, 0.3);
+
+    const size = this.tileSize;
+    const startX = this.x - size / 2;
+    const startY = this.y - size / 2;
+
+    // Draw dots in a grid pattern (ghost = dots)
+    const spacing = 4 * SCALE;
+    for (let dx = spacing / 2; dx < size; dx += spacing) {
+      for (let dy = spacing / 2; dy < size; dy += spacing) {
+        this.patternGraphics.fillCircle(
+          startX + dx,
+          startY + dy,
+          SCALE
+        );
+      }
+    }
   }
 
   /**
@@ -161,6 +224,9 @@ export default class PhaseBrick {
     }
     if (this.shimmer) {
       this.shimmer.destroy();
+    }
+    if (this.patternGraphics) {
+      this.patternGraphics.destroy();
     }
   }
 }
