@@ -107,6 +107,10 @@ export default class GameScene extends Phaser.Scene {
     this.player = new Player(this, spawnPoint.x, spawnPoint.y);
     this.player.scoreManager = this.scoreManager;
 
+    // Set player health based on difficulty
+    const maxHealth = saveManager.getMaxHealthForDifficulty();
+    this.player.setMaxHealth(maxHealth);
+
     // Setup collision with phase bricks
     this.setupPhaseBrickCollision();
 
@@ -151,6 +155,7 @@ export default class GameScene extends Phaser.Scene {
     // Create HUD
     this.hud = new GameHUD(this, this.scoreManager);
     this.hud.setWorld(this.currentWorld, this.currentLevel);
+    this.hud.setInitialHealth(this.player.currentHealth, this.player.maxHealth);
 
     // Start level timer
     this.scoreManager.startTimer();
@@ -162,6 +167,11 @@ export default class GameScene extends Phaser.Scene {
 
     // Setup pause menu input
     this.setupPauseInput();
+
+    // Setup death handler
+    this.events.once('playerDied', () => {
+      this.handlePlayerDeath();
+    });
 
     // Initialize pause state
     this.isPaused = false;
@@ -1255,20 +1265,40 @@ export default class GameScene extends Phaser.Scene {
    * Handle player taking damage
    */
   onPlayerDamaged() {
-    // Flash the player red
-    this.player.sprite.setTint(0xff0000);
-    audioManager.playHurt();
+    // Let player handle damage (invincibility, health decrement, death)
+    const tookDamage = this.player.takeDamage();
 
-    this.time.delayedCall(200, () => {
-      if (this.player && this.player.sprite) {
-        this.player.sprite.clearTint();
-      }
-    });
+    if (tookDamage) {
+      console.log(`💔 Player damaged! Health: ${this.player.currentHealth}/${this.player.maxHealth}`);
+    }
+  }
+
+  /**
+   * Handle player death
+   */
+  handlePlayerDeath() {
+    console.log('💀 Player died!');
+
+    // Stop timer
+    if (this.scoreManager) {
+      this.scoreManager.stopTimer();
+    }
+
+    // Pause physics
+    this.physics.pause();
 
     // Record death for global stats
     saveManager.recordDeath();
 
-    // TODO: Implement player health/death system in a later phase
-    console.log('💔 Player damaged!');
+    // Transition to Game Over scene after a delay
+    this.time.delayedCall(1000, () => {
+      this.scene.start('GameOverScene', {
+        world: this.currentWorld,
+        level: this.currentLevel,
+        levelKey: this.levelKey,
+        time: this.scoreManager.getFormattedTime(),
+        score: this.scoreManager.getScore()
+      });
+    });
   }
 }

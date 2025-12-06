@@ -447,6 +447,37 @@ class AudioManager {
   playLevelComplete() { this.playSFX(AUDIO_KEYS.SFX_LEVEL_COMPLETE); }
 
   /**
+   * Play player death sound (descending tone)
+   */
+  playPlayerDeath() {
+    if (!this.audioContext) return;
+
+    const volume = this.getEffectiveSFXVolume();
+    if (volume === 0) return;
+
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+
+    // Descending death tone
+    this.generateTone(ctx, now, {
+      frequency: 400,
+      endFrequency: 100,
+      duration: 0.4,
+      volume: volume * 0.35,
+      type: 'sawtooth'
+    });
+
+    // Secondary lower tone
+    this.generateTone(ctx, now + 0.1, {
+      frequency: 200,
+      endFrequency: 50,
+      duration: 0.5,
+      volume: volume * 0.25,
+      type: 'square'
+    });
+  }
+
+  /**
    * Resume audio context (required for some browsers)
    */
   resumeContext() {

@@ -71,6 +71,15 @@ export default class GameHUD {
     );
     this.container.add(this.coinsText);
 
+    // Health display (top left, below coins)
+    this.healthText = this.scene.add.text(
+      padding,
+      padding + lineHeight * 3,
+      'HEALTH ♥♥♥♥',
+      this.textStyle
+    );
+    this.container.add(this.healthText);
+
     // Time display (top right)
     const gameWidth = this.scene.game.config.width;
     this.timeText = this.scene.add.text(
@@ -157,6 +166,12 @@ export default class GameHUD {
       this.updateKeyShards();
       this.flashKeyShards();
     });
+
+    // Health changed
+    this.scene.events.on('healthChanged', (current, max) => {
+      this.updateHealth(current, max);
+      this.flashHealth();
+    });
   }
 
   /**
@@ -230,6 +245,69 @@ export default class GameHUD {
       yoyo: true,
       repeat: 3
     });
+  }
+
+  /**
+   * Update health display
+   * @param {number} current - Current health
+   * @param {number} max - Maximum health
+   */
+  updateHealth(current, max) {
+    let display = 'HEALTH ';
+
+    // Show filled hearts for current health, empty hearts for missing
+    for (let i = 0; i < max; i++) {
+      display += i < current ? '♥' : '♡';
+    }
+
+    this.healthText.setText(display);
+
+    // Change color based on health
+    if (current <= 1) {
+      this.healthText.setColor('#ff6666'); // Red when critical
+    } else if (current <= 2) {
+      this.healthText.setColor('#ffaa00'); // Orange when low
+    } else {
+      this.healthText.setColor('#ffffff'); // White when healthy
+    }
+  }
+
+  /**
+   * Flash health display when damaged
+   */
+  flashHealth() {
+    // Red flash effect
+    this.healthText.setColor('#ff0000');
+
+    this.scene.tweens.add({
+      targets: this.healthText,
+      alpha: 0.3,
+      duration: 100,
+      yoyo: true,
+      repeat: 3,
+      onComplete: () => {
+        this.healthText.alpha = 1;
+        // Restore appropriate color based on current health
+        const currentText = this.healthText.text;
+        const filledHearts = (currentText.match(/♥/g) || []).length;
+        if (filledHearts <= 1) {
+          this.healthText.setColor('#ff6666');
+        } else if (filledHearts <= 2) {
+          this.healthText.setColor('#ffaa00');
+        } else {
+          this.healthText.setColor('#ffffff');
+        }
+      }
+    });
+  }
+
+  /**
+   * Set initial health display (called at level start)
+   * @param {number} current - Current health
+   * @param {number} max - Maximum health
+   */
+  setInitialHealth(current, max) {
+    this.updateHealth(current, max);
   }
 
   /**
@@ -348,6 +426,7 @@ export default class GameHUD {
     this.scene.events.off('styleBonusStart');
     this.scene.events.off('styleBonusEnd');
     this.scene.events.off('keyShardCollected');
+    this.scene.events.off('healthChanged');
 
     // Destroy visual elements
     this.container.destroy();

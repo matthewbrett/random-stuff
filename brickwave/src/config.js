@@ -4,6 +4,7 @@ import TitleScene from './scenes/TitleScene.js';
 import LevelSelectScene from './scenes/LevelSelectScene.js';
 import SettingsScene from './scenes/SettingsScene.js';
 import GameScene from './scenes/GameScene.js';
+import GameOverScene from './scenes/GameOverScene.js';
 import { RESOLUTION_MODE, SCALE, setResolutionMode } from './resolution.js';
 
 // Re-export resolution constants for backwards compatibility
@@ -51,6 +52,7 @@ export const config = {
     LevelSelectScene,
     SettingsScene,
     GameScene,
+    GameOverScene,
   ],
 
   // Background color (catacomb blue-ish)

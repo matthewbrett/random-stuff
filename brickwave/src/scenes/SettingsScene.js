@@ -25,6 +25,7 @@ export default class SettingsScene extends Phaser.Scene {
       { key: 'resolution', label: 'Resolution', type: 'toggle', options: ['Retro (320x180)', 'Polished (640x360)'] },
       { key: 'screenShake', label: 'Screen Shake', type: 'toggle', options: ['On', 'Off'] },
       { key: 'separator2', label: '', type: 'separator' },
+      { key: 'difficulty', label: 'Difficulty', type: 'toggle', options: ['Easy (5♥)', 'Intermediate (4♥)', 'Hard (3♥)'] },
       { key: 'phaseTimingAssist', label: 'Phase Timing', type: 'toggle', options: ['Normal', 'Relaxed (1.5x)'] },
       { key: 'showTimer', label: 'Show Timer', type: 'toggle', options: ['On', 'Off'] },
       { key: 'separator3', label: '', type: 'separator' },
@@ -71,6 +72,7 @@ export default class SettingsScene extends Phaser.Scene {
       sfxVolume: 100,
       resolution: RESOLUTION_MODE === 'polished' ? 1 : 0,
       screenShake: 0, // 0 = On
+      difficulty: 1, // 0 = Easy, 1 = Intermediate, 2 = Hard
       phaseTimingAssist: 0, // 0 = Normal
       showTimer: 0, // 0 = On
     };
