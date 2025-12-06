@@ -14,6 +14,7 @@ import saveManager from '../systems/SaveManager.js';
 import audioManager from '../systems/AudioManager.js';
 import particleEffects from '../systems/ParticleEffects.js';
 import transitionManager from '../systems/TransitionManager.js';
+import inputManager from '../systems/InputManager.js';
 import { TextStyles, createSmoothText, createCenteredText } from '../utils/TextStyles.js';
 
 /**
@@ -60,6 +61,20 @@ export default class GameScene extends Phaser.Scene {
 
     // Initialize particle effects
     particleEffects.init(this);
+
+    // Initialize input manager with touch controls
+    inputManager.init(this);
+
+    // Apply touch control setting
+    const touchSetting = saveManager.getTouchControlsSetting();
+    if (touchSetting === 1) {
+      // Force on
+      inputManager.setTouchControlsVisible(true);
+    } else if (touchSetting === 2) {
+      // Force off
+      inputManager.setTouchControlsVisible(false);
+    }
+    // touchSetting === 0 is Auto (handled by inputManager)
 
     // Create score manager
     this.scoreManager = new ScoreManager(this);
@@ -512,6 +527,9 @@ export default class GameScene extends Phaser.Scene {
     if (this.completionOverlay) {
       this.cleanupCompletionOverlay();
     }
+
+    // Clean up input manager
+    inputManager.destroy();
   }
 
   setupPhaseBrickCollision() {

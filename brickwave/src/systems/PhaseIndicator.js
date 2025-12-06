@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PhaseState } from './PhaseManager.js';
 import { TextStyles, createSmoothText } from '../utils/TextStyles.js';
 import { SCALE } from '../config.js';
+import saveManager from './SaveManager.js';
 
 /**
  * PhaseIndicator - HUD element that shows phase timing
@@ -68,6 +69,28 @@ export default class PhaseIndicator {
     this.phaseLabel.setOrigin(1, 0.5);
     this.container.add(this.phaseLabel);
 
+    // Colorblind mode pattern indicator (shows symbol for current phase)
+    this.colorblindMode = saveManager.isColorblindModeEnabled();
+    this.phaseSymbol = scene.add.text(
+      this.width / 2 + 16 * SCALE,
+      0,
+      '■', // Solid square for solid phase
+      {
+        fontFamily: 'monospace',
+        fontSize: `${8 * SCALE}px`,
+        color: '#ffffff',
+        fontStyle: 'bold'
+      }
+    );
+    this.phaseSymbol.setOrigin(0.5, 0.5);
+    this.phaseSymbol.setVisible(this.colorblindMode);
+    this.container.add(this.phaseSymbol);
+
+    // Create pattern overlay for colorblind mode
+    this.patternGraphics = scene.add.graphics();
+    this.patternGraphics.setVisible(this.colorblindMode);
+    this.container.add(this.patternGraphics);
+
     // Listen for phase changes
     this.phaseManager.onPhaseChangeForGroup(groupId, (newPhase, oldPhase) => {
       this.onPhaseChange(newPhase, oldPhase);
@@ -93,10 +116,22 @@ export default class PhaseIndicator {
       // Solid phase: Blue
       this.progressBar.setFillStyle(0x3b82f6);
       this.pulseIndicator.setFillStyle(0x3b82f6);
+
+      // Colorblind mode: show solid square symbol
+      if (this.colorblindMode) {
+        this.phaseSymbol.setText('■');
+        this.drawSolidPattern();
+      }
     } else {
       // Ghost phase: Purple/darker
       this.progressBar.setFillStyle(0x8b5cf6);
       this.pulseIndicator.setFillStyle(0x8b5cf6);
+
+      // Colorblind mode: show hollow square symbol
+      if (this.colorblindMode) {
+        this.phaseSymbol.setText('□');
+        this.drawGhostPattern();
+      }
     }
 
     // Pulse the indicator near phase changes (last 20% of phase)
@@ -106,6 +141,54 @@ export default class PhaseIndicator {
       this.pulseIndicator.setAlpha(pulseAlpha);
     } else {
       this.pulseIndicator.setAlpha(0.8);
+    }
+  }
+
+  /**
+   * Draw solid pattern for colorblind mode (diagonal lines)
+   */
+  drawSolidPattern() {
+    this.patternGraphics.clear();
+    this.patternGraphics.lineStyle(1, 0xffffff, 0.3);
+
+    const barWidth = this.progressBar.width;
+    const barHeight = this.height - this.padding * 2;
+    const startX = -this.width / 2 + this.padding;
+    const startY = -barHeight / 2;
+
+    // Draw diagonal lines (solid pattern)
+    for (let i = -barHeight; i < barWidth + barHeight; i += 4 * SCALE) {
+      this.patternGraphics.lineBetween(
+        startX + i,
+        startY,
+        startX + i + barHeight,
+        startY + barHeight
+      );
+    }
+  }
+
+  /**
+   * Draw ghost pattern for colorblind mode (dots)
+   */
+  drawGhostPattern() {
+    this.patternGraphics.clear();
+    this.patternGraphics.fillStyle(0xffffff, 0.3);
+
+    const barWidth = this.progressBar.width;
+    const barHeight = this.height - this.padding * 2;
+    const startX = -this.width / 2 + this.padding;
+    const startY = -barHeight / 2;
+
+    // Draw dots (ghost pattern)
+    const spacing = 4 * SCALE;
+    for (let x = 0; x < barWidth; x += spacing) {
+      for (let y = 0; y < barHeight; y += spacing) {
+        this.patternGraphics.fillCircle(
+          startX + x + spacing / 2,
+          startY + y + spacing / 2,
+          SCALE
+        );
+      }
     }
   }
 
@@ -153,6 +236,9 @@ export default class PhaseIndicator {
    * Destroy the indicator
    */
   destroy() {
+    if (this.patternGraphics) {
+      this.patternGraphics.destroy();
+    }
     if (this.container) {
       this.container.destroy();
     }

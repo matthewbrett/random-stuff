@@ -1,4 +1,5 @@
 import { GAME_CONFIG } from '../config.js';
+import saveManager from './SaveManager.js';
 
 /**
  * PhaseManager - Manages the phase brick timing system
@@ -43,9 +44,12 @@ export default class PhaseManager {
    * @param {object} config - Configuration options
    */
   createPhaseGroup(groupId, config = {}) {
+    // Get phase timing multiplier from settings (for accessibility)
+    const phaseMultiplier = saveManager.getPhaseTimingMultiplier();
+
     const {
-      solidDuration = GAME_CONFIG.PHASE_CYCLE_DURATION,
-      ghostDuration = GAME_CONFIG.PHASE_CYCLE_DURATION,
+      solidDuration = GAME_CONFIG.PHASE_CYCLE_DURATION * phaseMultiplier,
+      ghostDuration = GAME_CONFIG.PHASE_CYCLE_DURATION * phaseMultiplier,
       startPhase = PhaseState.SOLID,
       offset = 0, // Time offset in ms
     } = config;

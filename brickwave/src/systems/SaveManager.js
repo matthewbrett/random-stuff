@@ -395,6 +395,62 @@ class SaveManager {
   }
 
   /**
+   * Get phase timing multiplier based on assist setting
+   * @returns {number} Multiplier for phase duration (1, 1.5, or 2)
+   */
+  getPhaseTimingMultiplier() {
+    const settings = this.getSettings();
+    const phaseAssist = settings?.phaseTimingAssist ?? 0;
+    const multipliers = [1, 1.5, 2]; // Normal, Relaxed, Slow
+    return multipliers[phaseAssist] ?? 1;
+  }
+
+  /**
+   * Check if invincibility mode is enabled
+   * @returns {boolean} Whether invincibility is on
+   */
+  isInvincibilityEnabled() {
+    const settings = this.getSettings();
+    return settings?.invincibility === 1;
+  }
+
+  /**
+   * Check if colorblind mode is enabled
+   * @returns {boolean} Whether colorblind patterns are on
+   */
+  isColorblindModeEnabled() {
+    const settings = this.getSettings();
+    return settings?.colorblindMode === 1;
+  }
+
+  /**
+   * Get touch controls setting
+   * @returns {number} 0 = Auto, 1 = On, 2 = Off
+   */
+  getTouchControlsSetting() {
+    const settings = this.getSettings();
+    return settings?.touchControls ?? 0;
+  }
+
+  /**
+   * Check if screen shake is enabled
+   * @returns {boolean} Whether screen shake is on
+   */
+  isScreenShakeEnabled() {
+    const settings = this.getSettings();
+    return settings?.screenShake !== 1; // 0 = On, 1 = Off
+  }
+
+  /**
+   * Check if timer should be shown
+   * @returns {boolean} Whether to show timer
+   */
+  isTimerVisible() {
+    const settings = this.getSettings();
+    return settings?.showTimer !== 1; // 0 = On, 1 = Off
+  }
+
+  /**
    * Clear all progress data (keep settings)
    */
   clearProgress() {

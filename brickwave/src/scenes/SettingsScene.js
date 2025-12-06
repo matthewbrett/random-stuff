@@ -26,10 +26,14 @@ export default class SettingsScene extends Phaser.Scene {
       { key: 'screenShake', label: 'Screen Shake', type: 'toggle', options: ['On', 'Off'] },
       { key: 'separator2', label: '', type: 'separator' },
       { key: 'difficulty', label: 'Difficulty', type: 'toggle', options: ['Easy (5♥)', 'Intermediate (4♥)', 'Hard (3♥)'] },
-      { key: 'phaseTimingAssist', label: 'Phase Timing', type: 'toggle', options: ['Normal', 'Relaxed (1.5x)'] },
+      { key: 'phaseTimingAssist', label: 'Phase Timing', type: 'toggle', options: ['Normal', 'Relaxed (1.5x)', 'Slow (2x)'] },
+      { key: 'invincibility', label: 'Invincibility', type: 'toggle', options: ['Off', 'On (Assisted)'] },
+      { key: 'colorblindMode', label: 'Colorblind Mode', type: 'toggle', options: ['Off', 'Patterns'] },
       { key: 'showTimer', label: 'Show Timer', type: 'toggle', options: ['On', 'Off'] },
+      { key: 'touchControls', label: 'Touch Controls', type: 'toggle', options: ['Auto', 'On', 'Off'] },
       { key: 'separator3', label: '', type: 'separator' },
       { key: 'controls', label: 'View Controls', type: 'action' },
+      { key: 'howToPlay', label: 'How to Play', type: 'action' },
       { key: 'exportSave', label: 'Export Save', type: 'action' },
       { key: 'importSave', label: 'Import Save', type: 'action' },
       { key: 'resetProgress', label: 'Reset Progress', type: 'action', dangerous: true },
@@ -73,8 +77,11 @@ export default class SettingsScene extends Phaser.Scene {
       resolution: RESOLUTION_MODE === 'polished' ? 1 : 0,
       screenShake: 0, // 0 = On
       difficulty: 1, // 0 = Easy, 1 = Intermediate, 2 = Hard
-      phaseTimingAssist: 0, // 0 = Normal
+      phaseTimingAssist: 0, // 0 = Normal, 1 = Relaxed (1.5x), 2 = Slow (2x)
+      invincibility: 0, // 0 = Off, 1 = On
+      colorblindMode: 0, // 0 = Off, 1 = Patterns
       showTimer: 0, // 0 = On
+      touchControls: 0, // 0 = Auto, 1 = On, 2 = Off
     };
 
     try {
@@ -413,6 +420,9 @@ export default class SettingsScene extends Phaser.Scene {
       case 'controls':
         this.showControls();
         break;
+      case 'howToPlay':
+        this.showHowToPlay();
+        break;
       case 'exportSave':
         this.showExportSave();
         break;
@@ -492,6 +502,83 @@ export default class SettingsScene extends Phaser.Scene {
       overlay.destroy();
       title.destroy();
       controlsText.destroy();
+      hint.destroy();
+    };
+
+    this.input.keyboard.once('keydown', cleanup);
+  }
+
+  /**
+   * Show How to Play overlay
+   */
+  showHowToPlay() {
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.95);
+    overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
+    overlay.setDepth(100);
+
+    const centerX = GAME_CONFIG.GAME_WIDTH / 2;
+
+    const title = createCenteredText(
+      this,
+      centerX,
+      12 * SCALE,
+      'HOW TO PLAY',
+      TextStyles.subtitle
+    );
+    title.setDepth(101);
+
+    const content = [
+      '═══ BASICS ═══',
+      'Reach the exit portal to complete each level.',
+      'Collect coins for score and Echo Charges.',
+      'Find 3 Key Shards hidden in each level.',
+      '',
+      '═══ PHASE BRICKS ═══',
+      'Blue bricks cycle between SOLID and GHOST.',
+      'Watch the phase indicator to time jumps!',
+      'Plan your route around the phase cycle.',
+      '',
+      '═══ ECHO CHARGES ═══',
+      'Every 10 coins = 1 Echo Charge (max 3).',
+      'Use Dash to move quickly and defeat enemies.',
+      '',
+      '═══ TIPS ═══',
+      'Stomp on enemies from above to defeat them.',
+      'Some enemies only appear during ghost phase.',
+      'Press R for instant restart!',
+    ];
+
+    const contentText = createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT / 2 + 5 * SCALE,
+      content.join('\n'),
+      { ...TextStyles.body, fontSize: `${6 * SCALE}px`, lineSpacing: 1 * SCALE }
+    );
+    contentText.setDepth(101);
+
+    const hint = createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT - 10 * SCALE,
+      'Press any key to close',
+      TextStyles.hint
+    );
+    hint.setDepth(101);
+
+    this.tweens.add({
+      targets: hint,
+      alpha: 0.3,
+      duration: 800,
+      yoyo: true,
+      repeat: -1
+    });
+
+    const cleanup = () => {
+      overlay.destroy();
+      title.destroy();
+      contentText.destroy();
       hint.destroy();
     };
 
