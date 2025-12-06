@@ -10,6 +10,10 @@ import PhaseIndicator from '../systems/PhaseIndicator.js';
 import ScoreManager from '../systems/ScoreManager.js';
 import GameHUD from '../systems/GameHUD.js';
 import EnemyManager from '../systems/EnemyManager.js';
+import saveManager from '../systems/SaveManager.js';
+import audioManager from '../systems/AudioManager.js';
+import particleEffects from '../systems/ParticleEffects.js';
+import transitionManager from '../systems/TransitionManager.js';
 import { TextStyles, createSmoothText, createCenteredText } from '../utils/TextStyles.js';
 
 /**
@@ -47,6 +51,15 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     console.log('🎮 GameScene: Initializing...');
+
+    // Initialize save manager
+    saveManager.init();
+
+    // Initialize audio manager with this scene
+    audioManager.init(this);
+
+    // Initialize particle effects
+    particleEffects.init(this);
 
     // Create score manager
     this.scoreManager = new ScoreManager(this);
@@ -157,6 +170,10 @@ export default class GameScene extends Phaser.Scene {
 
     // Setup shutdown handler to clean up before scene restart
     this.events.once('shutdown', this.shutdown, this);
+
+    // Fade in transition
+    transitionManager.init(this);
+    transitionManager.fadeIn({ duration: 200 });
   }
 
   /**
@@ -699,8 +716,12 @@ export default class GameScene extends Phaser.Scene {
     this.coins.forEach((coin, index) => {
       if (!coin.collected && coin.overlaps(playerBounds.x, playerBounds.y, playerBounds.width, playerBounds.height)) {
         // Collect the coin
+        const coinX = coin.x;
+        const coinY = coin.y;
         const score = coin.collect();
         this.scoreManager.collectCoin(score);
+        audioManager.playCoin();
+        particleEffects.createCoinSparkle(coinX, coinY);
 
         // Remove from array
         this.coins.splice(index, 1);
@@ -717,9 +738,13 @@ export default class GameScene extends Phaser.Scene {
     this.keyShards.forEach((shard, index) => {
       if (!shard.collected && shard.overlaps(playerBounds.x, playerBounds.y, playerBounds.width, playerBounds.height)) {
         // Collect the shard
+        const shardX = shard.x;
+        const shardY = shard.y;
         const shardIndex = shard.collect();
         if (shardIndex >= 0) {
           this.scoreManager.collectKeyShard(shardIndex);
+          audioManager.playShard();
+          particleEffects.createShardShimmer(shardX, shardY);
         }
 
         // Remove from array
@@ -773,6 +798,10 @@ export default class GameScene extends Phaser.Scene {
       this.player.sprite.body.setVelocity(0, 0);
     }
 
+    // Play level complete sound and effects
+    audioManager.playLevelComplete();
+    particleEffects.createLevelComplete(this.player.sprite.x, this.player.sprite.y);
+
     // Show level complete screen after effects
     this.time.delayedCall(1000, () => {
       this.showCompletionScreen();
@@ -821,6 +850,33 @@ export default class GameScene extends Phaser.Scene {
 
     // Calculate rank
     const rank = this.calculateRank();
+
+    // Save level completion
+    const levelId = `${this.currentWorld}-${this.currentLevel}`;
+    const improvements = saveManager.saveLevelCompletion(levelId, {
+      time: this.scoreManager.getLevelTimeSeconds(),
+      keyShards: this.scoreManager.getKeyShardCount(),
+      score: this.scoreManager.getTotalScore(),
+      rank: rank.letter,
+      coins: this.scoreManager.getCoinsCollected()
+    });
+
+    // Log improvements for debugging
+    if (improvements.firstCompletion) {
+      console.log('🎉 First time completing this level!');
+    }
+    if (improvements.newBestTime) {
+      console.log('⏱️ New best time!');
+    }
+    if (improvements.newBestScore) {
+      console.log('🏆 New best score!');
+    }
+    if (improvements.newKeyShards) {
+      console.log('🔑 New key shard record!');
+    }
+
+    // Store improvements for display
+    this.levelImprovements = improvements;
 
     // Results menu state
     this.resultsSelectedIndex = 0;
@@ -1180,6 +1236,12 @@ export default class GameScene extends Phaser.Scene {
       // Award score for defeated enemies
       if (result.score > 0) {
         this.scoreManager.addScore(result.score);
+        // Record enemy defeat for global stats
+        saveManager.recordEnemyDefeats(1);
+        // Play stomp sound and create effects
+        audioManager.playStomp();
+        // Create stomp effect at player position (since enemy is destroyed)
+        particleEffects.createStompEffect(this.player.sprite.x, this.player.sprite.y + 8 * SCALE);
       }
 
       // Handle player damage
@@ -1195,12 +1257,16 @@ export default class GameScene extends Phaser.Scene {
   onPlayerDamaged() {
     // Flash the player red
     this.player.sprite.setTint(0xff0000);
+    audioManager.playHurt();
 
     this.time.delayedCall(200, () => {
       if (this.player && this.player.sprite) {
         this.player.sprite.clearTint();
       }
     });
+
+    // Record death for global stats
+    saveManager.recordDeath();
 
     // TODO: Implement player health/death system in a later phase
     console.log('💔 Player damaged!');

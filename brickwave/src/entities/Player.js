@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
+import audioManager from '../systems/AudioManager.js';
+import particleEffects from '../systems/ParticleEffects.js';
 
 /**
  * Player - The player character with feel-first movement controls
@@ -163,6 +165,12 @@ export default class Player {
     this.wasGrounded = this.isGrounded;
     this.isGrounded = this.sprite.body.blocked.down || this.sprite.body.touching.down;
 
+    // Play land sound and dust when just landed
+    if (this.isGrounded && !this.wasGrounded) {
+      audioManager.playLand();
+      particleEffects.createLandingDust(this.sprite.x, this.sprite.y + 4 * SCALE);
+    }
+
     // Update coyote time
     if (this.isGrounded) {
       this.lastGroundedTime = time;
@@ -235,7 +243,7 @@ export default class Player {
     this.isJumping = true;
     this.jumpHoldTime = 0;
     this.canJump = false;
-    console.log('🎮 Player: Jump!');
+    audioManager.playJump();
   }
 
   handleDash(time, delta) {
@@ -253,6 +261,15 @@ export default class Player {
     // Continue dash
     if (this.isDashing) {
       this.dashTime += delta;
+
+      // Create dash trail particles
+      if (this.dashTime % 50 < delta) { // Every ~50ms
+        particleEffects.createDashTrail(
+          this.sprite.x,
+          this.sprite.y,
+          this.dashDirection
+        );
+      }
 
       if (this.dashTime >= this.dashDuration) {
         this.endDash();
@@ -285,8 +302,7 @@ export default class Player {
     this.sprite.body.setVelocityY(0);
     this.sprite.body.setAccelerationX(0);
 
-    const chargesLeft = this.scoreManager ? this.scoreManager.getEchoCharges() : 0;
-    console.log('🎮 Player: Dash! Direction:', dashDir, 'Charges left:', chargesLeft);
+    audioManager.playDash();
   }
 
   endDash() {

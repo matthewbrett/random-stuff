@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
 import { TextStyles, createCenteredText, createSmoothText } from '../utils/TextStyles.js';
+import saveManager from '../systems/SaveManager.js';
+import audioManager from '../systems/AudioManager.js';
+import transitionManager from '../systems/TransitionManager.js';
 
 /**
  * LevelSelectScene - Level selection screen
@@ -29,9 +32,12 @@ export default class LevelSelectScene extends Phaser.Scene {
   create() {
     console.log('🎮 LevelSelectScene: Creating level select...');
 
+    // Initialize audio manager with this scene
+    audioManager.init(this);
+
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
 
-    // Load saved progress (placeholder - full implementation in Phase 9)
+    // Load saved progress
     this.loadProgress();
 
     // Create background
@@ -48,40 +54,39 @@ export default class LevelSelectScene extends Phaser.Scene {
 
     // Setup input
     this.setupInput();
+
+    // Fade in transition
+    transitionManager.init(this);
+    transitionManager.fadeIn({ duration: 250 });
   }
 
   /**
-   * Load saved progress from localStorage (placeholder)
+   * Load saved progress from SaveManager
    */
   loadProgress() {
-    try {
-      const savedProgress = localStorage.getItem('brickwave_progress');
-      if (savedProgress) {
-        const progress = JSON.parse(savedProgress);
+    // Initialize SaveManager if not already done
+    saveManager.init();
 
-        this.levels.forEach((level, index) => {
-          const levelProgress = progress[level.id];
-          if (levelProgress) {
-            level.bestTime = levelProgress.bestTime || null;
-            level.keyShards = levelProgress.keyShards || 0;
-          }
+    // Load progress for each level
+    this.levels.forEach((level, index) => {
+      const levelProgress = saveManager.getLevelProgress(level.id);
 
-          // Unlock logic: first level always unlocked, others require previous completion
-          if (index === 0) {
-            level.unlocked = true;
-          } else {
-            const prevLevel = this.levels[index - 1];
-            const prevProgress = progress[prevLevel.id];
-            level.unlocked = prevProgress && prevProgress.completed;
-          }
-        });
+      if (levelProgress) {
+        level.bestTime = levelProgress.bestTime;
+        level.keyShards = levelProgress.keyShards || 0;
+        level.bestScore = levelProgress.bestScore || 0;
+        level.bestRank = levelProgress.bestRank;
+        level.completed = levelProgress.completed;
       }
-    } catch (e) {
-      console.warn('Failed to load progress:', e);
-    }
 
-    // For MVP, unlock all levels for testing
-    this.levels.forEach(level => level.unlocked = true);
+      // Use SaveManager's unlock logic
+      level.unlocked = saveManager.isLevelUnlocked(level.id);
+    });
+
+    // Log total progress
+    const completedCount = saveManager.getCompletedLevelCount();
+    const totalShards = saveManager.getTotalKeyShards();
+    console.log(`📊 Progress: ${completedCount}/3 levels, ${totalShards}/9 key shards`);
   }
 
   /**
@@ -208,6 +213,26 @@ export default class LevelSelectScene extends Phaser.Scene {
       container.add(shardsText);
     }
 
+    // Show rank badge if completed
+    if (level.unlocked && level.completed && level.bestRank) {
+      const rankColors = {
+        S: '#ffff00',
+        A: '#00ff00',
+        B: '#00ffff',
+        C: '#ffffff',
+        D: '#888888'
+      };
+      const rankX = 180 * SCALE;
+      const rankText = createSmoothText(
+        this,
+        rankX,
+        0,
+        level.bestRank,
+        { ...TextStyles.rank, fontSize: `${12 * SCALE}px`, color: rankColors[level.bestRank] || '#ffffff' }
+      );
+      container.add(rankText);
+    }
+
     // Lock icon for locked levels
     if (!level.unlocked) {
       const lockIcon = createSmoothText(
@@ -251,13 +276,11 @@ export default class LevelSelectScene extends Phaser.Scene {
   }
 
   /**
-   * Format time in MM:SS
+   * Format time in MM:SS.ms (time is stored in seconds)
    */
-  formatTime(milliseconds) {
-    const totalSeconds = Math.floor(milliseconds / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  formatTime(seconds) {
+    if (seconds === null || seconds === undefined) return '--:--';
+    return saveManager.formatTime(seconds);
   }
 
   /**
@@ -305,6 +328,10 @@ export default class LevelSelectScene extends Phaser.Scene {
     }
 
     if (index >= 0 && index < this.levels.length && this.levels[index].unlocked) {
+      // Only play sound if selection changed
+      if (index !== this.selectedIndex) {
+        audioManager.playMenuSelect();
+      }
       this.selectedIndex = index;
       this.updateSelection();
     }
@@ -362,6 +389,9 @@ export default class LevelSelectScene extends Phaser.Scene {
       this.cameras.main.shake(100, 0.01);
       return;
     }
+
+    // Play confirm sound
+    audioManager.playMenuConfirm();
 
     // Parse level ID
     const [world, level] = selectedLevel.id.split('-').map(Number);

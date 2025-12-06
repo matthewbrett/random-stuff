@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config.js';
 import { TextStyles, createCenteredText, createSmoothText } from '../utils/TextStyles.js';
+import audioManager from '../systems/AudioManager.js';
 
 /**
  * BootScene - Initial loading and setup scene
@@ -12,12 +13,17 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // TODO: Load initial assets here
     console.log('🎮 BootScene: Preloading assets...');
+
+    // Preload audio assets
+    audioManager.preload(this);
   }
 
   create() {
     console.log('🎮 BootScene: Initializing...');
+
+    // Initialize AudioManager
+    audioManager.init(this);
 
     // Display a simple text message to verify Phaser is working
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
