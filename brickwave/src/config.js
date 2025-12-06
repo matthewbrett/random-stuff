@@ -4,22 +4,10 @@ import TitleScene from './scenes/TitleScene.js';
 import LevelSelectScene from './scenes/LevelSelectScene.js';
 import SettingsScene from './scenes/SettingsScene.js';
 import GameScene from './scenes/GameScene.js';
+import { RESOLUTION_MODE, SCALE, setResolutionMode } from './resolution.js';
 
-// Resolution mode detection
-function detectResolutionMode() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlMode = urlParams.get('mode');
-  if (urlMode === 'polished' || urlMode === 'retro') return urlMode;
-  return localStorage.getItem('brickwave_resolution_mode') || 'retro';
-}
-
-export const RESOLUTION_MODE = detectResolutionMode();
-export const SCALE = RESOLUTION_MODE === 'polished' ? 2 : 1;
-
-export function setResolutionMode(mode) {
-  localStorage.setItem('brickwave_resolution_mode', mode);
-  window.location.reload();
-}
+// Re-export resolution constants for backwards compatibility
+export { RESOLUTION_MODE, SCALE, setResolutionMode };
 
 // Game configuration
 export const config = {

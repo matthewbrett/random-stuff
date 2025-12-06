@@ -1,4 +1,4 @@
-import { SCALE } from '../config.js';
+import { SCALE } from '../resolution.js';
 
 /**
  * TextStyles.js
