@@ -221,7 +221,7 @@
           "name": "player",
           "type": "spawn",
           "x": 24,
-          "y": 40,
+          "y": 32,
           "width": 8,
           "height": 8
         },
