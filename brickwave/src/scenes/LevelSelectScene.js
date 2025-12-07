@@ -395,12 +395,14 @@ export default class LevelSelectScene extends Phaser.Scene {
     audioManager.playMenuConfirm();
 
     // Parse level ID (handle special "intro" case)
-    let world, level;
+    let world, level, levelKey;
     if (selectedLevel.id === 'intro') {
       world = 0;
       level = 0;
+      levelKey = 'level-0-0';
     } else {
       [world, level] = selectedLevel.id.split('-').map(Number);
+      levelKey = `level-${selectedLevel.id}`;
     }
 
     // Flash and transition
@@ -410,7 +412,7 @@ export default class LevelSelectScene extends Phaser.Scene {
       this.scene.start('GameScene', {
         world,
         level,
-        levelKey: `level-${selectedLevel.id}`
+        levelKey
       });
     });
   }

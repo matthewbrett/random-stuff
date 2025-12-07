@@ -319,13 +319,13 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   /**
-   * Start the game (level 1-1)
+   * Start the game (intro level)
    */
   startGame() {
     this.scene.start('GameScene', {
-      world: 1,
-      level: 1,
-      levelKey: 'level-1-1'
+      world: 0,
+      level: 0,
+      levelKey: 'level-0-0'
     });
   }
 
