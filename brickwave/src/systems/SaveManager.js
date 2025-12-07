@@ -410,6 +410,26 @@ class SaveManager {
   }
 
   /**
+   * Get required key shards based on difficulty
+   * @returns {number} Required shard count
+   */
+  getRequiredKeyShards() {
+    const difficulty = this.getDifficulty();
+    const requirements = [0, 2, 3]; // Easy, Intermediate, Hard
+    return requirements[difficulty] ?? 0;
+  }
+
+  /**
+   * Get enemy speed multiplier based on difficulty
+   * @returns {number} Speed multiplier
+   */
+  getEnemySpeedMultiplier() {
+    const difficulty = this.getDifficulty();
+    const multipliers = [0.8, 1.0, 1.2]; // Easy, Intermediate, Hard
+    return multipliers[difficulty] ?? 1.0;
+  }
+
+  /**
    * Get phase timing multiplier based on assist setting
    * @returns {number} Multiplier for phase duration (1, 1.5, or 2)
    */

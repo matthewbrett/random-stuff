@@ -15,6 +15,7 @@ export default class GameHUD {
   constructor(scene, scoreManager) {
     this.scene = scene;
     this.scoreManager = scoreManager;
+    this.requiredKeyShards = 0;
 
     // HUD container (fixed to camera)
     this.container = scene.add.container(0, 0);
@@ -224,6 +225,9 @@ export default class GameHUD {
    */
   updateKeyShards() {
     const shards = this.scoreManager.getKeyShards();
+    const collected = this.scoreManager.getKeyShardCount();
+    const total = this.scoreManager.getTotalKeyShards();
+    const required = this.requiredKeyShards > 0 ? this.requiredKeyShards : total;
     let display = 'KEYS ';
 
     // Show filled/empty diamonds for shards
@@ -231,7 +235,8 @@ export default class GameHUD {
       display += shards[i] ? '◆' : '◇';
     }
 
-    this.keyShardsText.setText(display);
+    const suffix = this.requiredKeyShards > 0 ? 'REQ' : 'TOTAL';
+    this.keyShardsText.setText(`${display} ${collected}/${required} ${suffix}`);
   }
 
   /**
@@ -382,6 +387,15 @@ export default class GameHUD {
 
     // Update Echo Charges (in case they changed)
     this.updateEchoCharges(this.scoreManager.getEchoCharges());
+  }
+
+  /**
+   * Set how many key shards are required to exit
+   * @param {number} required - Required shard count
+   */
+  setKeyShardRequirement(required) {
+    this.requiredKeyShards = required;
+    this.updateKeyShards();
   }
 
   /**

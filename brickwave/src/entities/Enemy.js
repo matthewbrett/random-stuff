@@ -35,6 +35,9 @@ export default class Enemy {
       ...config
     };
 
+    this.speedMultiplier = config.speedMultiplier ?? 1;
+    this.config.speed *= this.speedMultiplier;
+
     // State
     this.state = EnemyState.ACTIVE;
     this.facing = 1; // 1 = right, -1 = left

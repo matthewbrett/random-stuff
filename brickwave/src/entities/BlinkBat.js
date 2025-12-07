@@ -32,9 +32,9 @@ export default class BlinkBat extends Enemy {
     this.startX = x;
     this.startY = y;
     this.flyTime = 0;
-    this.flySpeed = 2;
-    this.horizontalRange = 40 * SCALE; // How far to fly horizontally
-    this.verticalAmplitude = 12 * SCALE; // Vertical wave height
+    this.flySpeed = (config.flySpeed ?? 2) * this.speedMultiplier;
+    this.horizontalRange = config.horizontalRange ?? 40 * SCALE; // How far to fly horizontally
+    this.verticalAmplitude = config.verticalAmplitude ?? 12 * SCALE; // Vertical wave height
 
     // Wing animation
     this.wingTime = 0;

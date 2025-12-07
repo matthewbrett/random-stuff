@@ -1,3 +1,5 @@
+import Phaser from 'phaser';
+
 /**
  * ScoreManager - Manages scoring, coins, and Echo Charge system
  *
@@ -22,8 +24,9 @@ export default class ScoreManager {
     this.coinsPerCharge = 10;
 
     // Key Shard tracking
-    this.keyShards = [false, false, false]; // 3 shards per level
     this.totalKeyShards = 3;
+    this.keyShards = new Array(this.totalKeyShards).fill(false); // 3 shards per level
+    this.requiredKeyShards = 0;
 
     // Bonus tracking
     this.timeBonus = 0;
@@ -233,6 +236,51 @@ export default class ScoreManager {
   }
 
   /**
+   * Get total number of key shards in the level
+   * @returns {number} Total shards
+   */
+  getTotalKeyShards() {
+    return this.totalKeyShards;
+  }
+
+  /**
+   * Set how many key shards are required to exit
+   * @param {number} required - Required shard count
+   */
+  setRequiredKeyShards(required) {
+    const clamped = Phaser.Math.Clamp(required, 0, this.totalKeyShards);
+    this.requiredKeyShards = clamped;
+  }
+
+  /**
+   * Set how many total shards exist in the level
+   * @param {number} total - Total shards present
+   */
+  setTotalKeyShards(total) {
+    const safeTotal = Math.max(0, Math.floor(total));
+    this.totalKeyShards = safeTotal;
+    this.keyShards = new Array(this.totalKeyShards).fill(false);
+    // Re-clamp requirement to available shards
+    this.setRequiredKeyShards(this.requiredKeyShards);
+  }
+
+  /**
+   * Get required key shards for exit
+   * @returns {number} Required shard count
+   */
+  getRequiredKeyShards() {
+    return this.requiredKeyShards;
+  }
+
+  /**
+   * Whether the requirement has been met
+   * @returns {boolean} True if enough shards collected
+   */
+  hasRequiredKeyShards() {
+    return this.getKeyShardCount() >= this.requiredKeyShards;
+  }
+
+  /**
    * Get key shard array
    * @returns {boolean[]} Array of collected states
    */
@@ -255,7 +303,7 @@ export default class ScoreManager {
     this.score = 0;
     this.coinsCollected = 0;
     this.echoCharges = 0;
-    this.keyShards = [false, false, false];
+    this.keyShards = new Array(this.totalKeyShards).fill(false);
     this.timeBonus = 0;
     this.styleBonus = 0;
     this.styleBonusMultiplier = 1.0;

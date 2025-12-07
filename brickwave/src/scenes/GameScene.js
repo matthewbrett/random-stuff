@@ -87,6 +87,8 @@ export default class GameScene extends Phaser.Scene {
 
     // Create score manager
     this.scoreManager = new ScoreManager(this);
+    this.requiredKeyShards = saveManager.getRequiredKeyShards();
+    this.scoreManager.setRequiredKeyShards(this.requiredKeyShards);
 
     // Create phase manager
     this.phaseManager = new PhaseManager(this);
@@ -158,6 +160,7 @@ export default class GameScene extends Phaser.Scene {
     // Create level exit
     this.levelExit = null;
     this.createLevelExit(levelData);
+    this.updateExitLockState();
 
     // Setup coin collision
     this.setupCoinCollision();
@@ -189,6 +192,7 @@ export default class GameScene extends Phaser.Scene {
     this.hud = new GameHUD(this, this.scoreManager);
     this.hud.setWorld(this.currentWorld, this.currentLevel);
     this.hud.setInitialHealth(this.player.currentHealth, this.player.maxHealth);
+    this.hud.setKeyShardRequirement(this.requiredKeyShards);
 
     // Start level timer
     this.scoreManager.startTimer();
@@ -642,9 +646,9 @@ export default class GameScene extends Phaser.Scene {
     const shardsLayer = levelData.layers.find(
       layer => layer.name === 'KeyShards' || layer.name === 'Secrets'
     );
+    let shardIndex = 0;
 
     if (shardsLayer && shardsLayer.objects) {
-      let shardIndex = 0;
       shardsLayer.objects.forEach(obj => {
         if (obj.name === 'keyshard' || obj.type === 'keyshard') {
           const shard = new KeyShard(
@@ -658,6 +662,18 @@ export default class GameScene extends Phaser.Scene {
         }
       });
     }
+
+    if (this.scoreManager) {
+      this.scoreManager.setTotalKeyShards(shardIndex);
+      // Re-apply difficulty requirement, clamped to available shards
+      this.scoreManager.setRequiredKeyShards(this.requiredKeyShards);
+    }
+
+    if (this.hud) {
+      this.hud.setKeyShardRequirement(this.scoreManager.getRequiredKeyShards());
+    }
+
+    this.updateExitLockState();
   }
 
   /**
@@ -842,6 +858,7 @@ export default class GameScene extends Phaser.Scene {
 
         // Remove from array
         this.keyShards.splice(index, 1);
+        this.updateExitLockState();
       }
     });
   }
@@ -910,11 +927,37 @@ export default class GameScene extends Phaser.Scene {
       this.levelExit.sprite.x, this.levelExit.sprite.y
     );
     this.levelExit.setPlayerNearby(distance < 40 * SCALE);
+    this.updateExitLockState();
 
     // Check if player overlaps exit
     if (this.levelExit.overlaps(playerBounds.x, playerBounds.y, playerBounds.width, playerBounds.height)) {
+      if (!this.hasRequiredKeyShards()) {
+        if (this.hud) {
+          this.hud.flashKeyShards();
+        }
+        return;
+      }
       this.completLevel();
     }
+  }
+
+  /**
+   * Whether the player has enough shards to unlock the exit
+   * @returns {boolean} Requirement met
+   */
+  hasRequiredKeyShards() {
+    return this.scoreManager?.hasRequiredKeyShards() ?? true;
+  }
+
+  /**
+   * Keep the exit lock state in sync with shard progress
+   */
+  updateExitLockState() {
+    if (!this.levelExit || !this.scoreManager) return;
+    this.levelExit.updateShardStatus(
+      this.scoreManager.getRequiredKeyShards(),
+      this.scoreManager.getKeyShardCount()
+    );
   }
 
   /**

@@ -14,6 +14,9 @@ export default class LevelExit {
     this.scene = scene;
     this.triggered = false;
     this.playerNearby = false;
+    this.locked = false;
+    this.requiredKeyShards = 0;
+    this.collectedKeyShards = 0;
 
     // Exit dimensions (larger than a tile for visibility)
     this.width = 16 * SCALE;
@@ -80,17 +83,20 @@ export default class LevelExit {
 
     this.animTime += delta;
 
+    const baseGlowColor = this.locked ? 0xd35454 : 0x4a90d9;
+    const accentGlowColor = this.locked ? 0xffb3a1 : 0x8ecae6;
+
     // Pulsing glow effect
     const glowIntensity = 0.3 + Math.sin(this.animTime / 500) * 0.2;
     const glowSize = (20 + Math.sin(this.animTime / 300) * 5) * SCALE;
 
     this.glowGraphics.clear();
-    this.glowGraphics.fillStyle(0x4a90d9, glowIntensity);
+    this.glowGraphics.fillStyle(baseGlowColor, glowIntensity);
     this.glowGraphics.fillCircle(this.sprite.x, this.sprite.y - this.height / 2, glowSize);
 
     // Stronger glow when player is nearby
     if (this.playerNearby) {
-      this.glowGraphics.fillStyle(0x8ecae6, glowIntensity + 0.2);
+      this.glowGraphics.fillStyle(accentGlowColor, glowIntensity + 0.2);
       this.glowGraphics.fillCircle(this.sprite.x, this.sprite.y - this.height / 2, glowSize * 0.7);
     }
 
@@ -147,7 +153,7 @@ export default class LevelExit {
    * @returns {boolean} True if successfully triggered
    */
   trigger() {
-    if (this.triggered) return false;
+    if (this.triggered || this.locked) return false;
 
     this.triggered = true;
 
@@ -242,5 +248,24 @@ export default class LevelExit {
       exitBounds,
       new Phaser.Geom.Rectangle(x, y, width, height)
     );
+  }
+
+  /**
+   * Update lock state based on shard requirement
+   * @param {number} required - Required shards to unlock
+   * @param {number} collected - Currently collected shards
+   */
+  updateShardStatus(required, collected) {
+    this.requiredKeyShards = required;
+    this.collectedKeyShards = collected;
+    this.locked = collected < required;
+  }
+
+  /**
+   * Whether the exit is locked
+   * @returns {boolean} Lock state
+   */
+  isLocked() {
+    return this.locked;
   }
 }
