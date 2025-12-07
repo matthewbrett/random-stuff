@@ -3,6 +3,7 @@ import Skitter from '../entities/Skitter.js';
 import BlinkBat from '../entities/BlinkBat.js';
 import SentryOrb from '../entities/SentryOrb.js';
 import BrickMimic from '../entities/BrickMimic.js';
+import saveManager from './SaveManager.js';
 
 /**
  * EnemyManager - Handles enemy spawning, updating, and collision
@@ -19,6 +20,10 @@ export default class EnemyManager {
 
     // Array of all active enemies
     this.enemies = [];
+
+    // Difficulty-driven tuning
+    this.difficulty = saveManager.getDifficulty();
+    this.enemySpeedMultiplier = saveManager.getEnemySpeedMultiplier();
 
     // Enemy class registry for spawning
     this.enemyTypes = {
@@ -74,6 +79,10 @@ export default class EnemyManager {
     // Parse custom properties from Tiled
     const config = this.parseObjectProperties(obj);
 
+    if (!this.shouldSpawnEnemy(config)) {
+      return null;
+    }
+
     // Calculate spawn position (Tiled uses bottom-left, we use center)
     const x = obj.x + (obj.width || 8) / 2;
     const y = obj.y - (obj.height || 8) / 2;
@@ -115,7 +124,8 @@ export default class EnemyManager {
       return null;
     }
 
-    const enemy = new EnemyClass(this.scene, x, y, config);
+    const speedMultiplier = (config.speedMultiplier ?? 1) * this.enemySpeedMultiplier;
+    const enemy = new EnemyClass(this.scene, x, y, { ...config, speedMultiplier });
     this.enemies.push(enemy);
 
     // Setup collision with platforms
@@ -231,6 +241,25 @@ export default class EnemyManager {
   clear() {
     this.enemies.forEach(enemy => enemy.destroy());
     this.enemies = [];
+  }
+
+  /**
+   * Whether an enemy should spawn for the current difficulty
+   * @param {object} config - Parsed properties
+   * @returns {boolean} True if enemy should be spawned
+   */
+  shouldSpawnEnemy(config = {}) {
+    // Skip enemies flagged medium/hard on Easy
+    if (this.difficulty === 0 && (config.medium_hard_only || config.mediumHardOnly)) {
+      return false;
+    }
+
+    // Skip hard-only enemies unless on Hard
+    if (this.difficulty < 2 && (config.hard_only || config.hardOnly)) {
+      return false;
+    }
+
+    return true;
   }
 
   /**

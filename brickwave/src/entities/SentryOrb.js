@@ -27,7 +27,7 @@ export default class SentryOrb extends Enemy {
     this.centerX = x;
     this.centerY = y;
     this.orbitTime = Math.random() * Math.PI * 2; // Random start position in orbit
-    this.orbitSpeed = 1.5; // Speed of orbit
+    this.orbitSpeed = (config.orbitSpeed ?? 1.5) * this.speedMultiplier; // Speed of orbit
 
     // Orbit pattern configuration (scaled)
     this.orbitType = config.orbitType || 'arc'; // 'arc', 'circle', 'figure8'
