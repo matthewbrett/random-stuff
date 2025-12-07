@@ -2,6 +2,34 @@
 
 This guide covers how to share BRICKWAVE and play it on different devices.
 
+## Automated Deployment (GitHub Actions - Recommended for this repo)
+
+**This repo uses GitHub Actions for automatic deployment to GitHub Pages.**
+
+Every push to the `main` branch automatically:
+1. Builds BRICKWAVE
+2. Deploys the portfolio landing page to `https://matthewbrett.github.io/random-stuff/`
+3. Deploys BRICKWAVE to `https://matthewbrett.github.io/random-stuff/brickwave/`
+
+### How it works:
+- The workflow is defined in `.github/workflows/deploy.yml`
+- Builds run on every push to main or manually via "Actions" tab
+- No manual deployment needed!
+
+### To deploy:
+```bash
+git add .
+git commit -m "Your changes"
+git push origin main
+```
+
+Wait 1-2 minutes and your changes will be live.
+
+### Manual trigger:
+Go to the "Actions" tab on GitHub → "Deploy to GitHub Pages" → "Run workflow"
+
+---
+
 ## Quick Deploy (Production Build)
 
 ### 1. Build for Production
