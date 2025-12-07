@@ -8,6 +8,7 @@ import LevelLoader from '../systems/LevelLoader.js';
 import PhaseManager from '../systems/PhaseManager.js';
 import PhaseIndicator from '../systems/PhaseIndicator.js';
 import ScoreManager from '../systems/ScoreManager.js';
+import Powerup from '../entities/Powerup.js';
 import GameHUD from '../systems/GameHUD.js';
 import EnemyManager from '../systems/EnemyManager.js';
 import saveManager from '../systems/SaveManager.js';
@@ -39,6 +40,12 @@ export default class GameScene extends Phaser.Scene {
     this.load.json('level-1-1', 'assets/levels/level-1-1.json');
     this.load.json('level-1-2', 'assets/levels/level-1-2.json');
     this.load.json('level-1-3', 'assets/levels/level-1-3.json');
+    this.load.json('level-1-4', 'assets/levels/level-1-4.json');
+    this.load.json('level-1-5', 'assets/levels/level-1-5.json');
+    this.load.json('level-1-6', 'assets/levels/level-1-6.json');
+    this.load.json('level-1-7', 'assets/levels/level-1-7.json');
+    this.load.json('level-1-8', 'assets/levels/level-1-8.json');
+    this.load.json('level-1-9', 'assets/levels/level-1-9.json');
 
     // Also load test level for backwards compatibility
     this.load.json('testLevel1', 'assets/levels/test-level-1.json');
@@ -128,6 +135,11 @@ export default class GameScene extends Phaser.Scene {
     const maxHealth = saveManager.getMaxHealthForDifficulty();
     this.player.setMaxHealth(maxHealth);
 
+    // Power-up state
+    this.phaseAnchorTimer = 0;
+    this.spectralBootsTimer = 0;
+    this.spectralGraceDuration = 500; // ms grace on ghost tiles
+
     // Setup collision with phase bricks
     this.setupPhaseBrickCollision();
 
@@ -138,6 +150,10 @@ export default class GameScene extends Phaser.Scene {
     // Create key shards
     this.keyShards = [];
     this.createKeyShards(levelData);
+
+    // Create power-ups
+    this.powerups = [];
+    this.createPowerups(levelData);
 
     // Create level exit
     this.levelExit = null;
@@ -542,7 +558,13 @@ export default class GameScene extends Phaser.Scene {
         this.player.sprite,
         phaseBrick.brick,
         null,
-        () => phaseBrick.isSolid(), // Only collide if brick is solid
+        () => {
+          if (phaseBrick.isSolid()) return true;
+          if (this.isSpectralBootsActive() && phaseBrick.canSupportWithGrace(this.spectralGraceDuration)) {
+            return true;
+          }
+          return false;
+        }, // Allow collision during spectral boots grace
         this
       );
     });
@@ -575,6 +597,31 @@ export default class GameScene extends Phaser.Scene {
         const coin = new Coin(this, (50 + i * 20) * SCALE, 100 * SCALE);
         this.coins.push(coin);
       }
+    }
+  }
+
+  /**
+  * Create power-ups from level data
+  * @param {object} levelData - Level JSON data
+  */
+  createPowerups(levelData) {
+    const powerLayer = levelData.layers.find(
+      layer => layer.name === 'Powerups' || layer.name === 'Entities'
+    );
+
+    if (powerLayer && powerLayer.objects) {
+      powerLayer.objects.forEach(obj => {
+        const type = (obj.type || obj.name || '').toLowerCase();
+        if (type === 'phase_anchor' || type === 'spectral_boots') {
+          const powerup = new Powerup(
+            this,
+            (obj.x + obj.width / 2) * SCALE,
+            (obj.y + obj.height / 2) * SCALE,
+            type
+          );
+          this.powerups.push(powerup);
+        }
+      });
     }
   }
 
@@ -653,6 +700,14 @@ export default class GameScene extends Phaser.Scene {
       this.scoreManager.updateTimer();
     }
 
+    // Update active power-up timers
+    if (this.phaseAnchorTimer > 0) {
+      this.phaseAnchorTimer = Math.max(0, this.phaseAnchorTimer - delta);
+    }
+    if (this.spectralBootsTimer > 0) {
+      this.spectralBootsTimer = Math.max(0, this.spectralBootsTimer - delta);
+    }
+
     // Update phase manager (handles phase timing)
     if (this.phaseManager) {
       this.phaseManager.update(time, delta);
@@ -684,6 +739,11 @@ export default class GameScene extends Phaser.Scene {
       });
     }
 
+    // Update power-ups
+    if (this.powerups) {
+      this.powerups.forEach(power => power.update(time, delta));
+    }
+
     // Update level exit
     if (this.levelExit) {
       this.levelExit.update(time, delta);
@@ -703,6 +763,9 @@ export default class GameScene extends Phaser.Scene {
 
       // Check key shard collection
       this.checkKeyShardCollection();
+
+      // Check power-up collection
+      this.checkPowerupCollection();
 
       // Check level exit
       this.checkLevelExit();
@@ -781,6 +844,56 @@ export default class GameScene extends Phaser.Scene {
         this.keyShards.splice(index, 1);
       }
     });
+  }
+
+  /**
+   * Check power-up pickups
+   */
+  checkPowerupCollection() {
+    if (!this.player || !this.powerups) return;
+
+    const playerBounds = this.player.sprite.getBounds();
+    for (let i = this.powerups.length - 1; i >= 0; i--) {
+      const power = this.powerups[i];
+      if (power.collected) continue;
+
+      if (power.overlaps(playerBounds.x, playerBounds.y, playerBounds.width, playerBounds.height)) {
+        const type = power.collect();
+        this.applyPowerup(type);
+        this.powerups.splice(i, 1);
+      }
+    }
+  }
+
+  /**
+   * Apply a collected power-up effect
+   * @param {string} type - Power-up type id
+   */
+  applyPowerup(type) {
+    if (type === 'phase_anchor') {
+      this.activatePhaseAnchor(3000);
+    } else if (type === 'spectral_boots') {
+      this.activateSpectralBoots(8000);
+    }
+  }
+
+  activatePhaseAnchor(duration = 3000) {
+    this.phaseAnchorTimer = Math.max(this.phaseAnchorTimer, duration);
+    if (this.phaseManager?.freezeFor) {
+      this.phaseManager.freezeFor(duration);
+    }
+    particleEffects.createCoinSparkle(this.player.sprite.x, this.player.sprite.y - 6 * SCALE);
+    audioManager.playPhase();
+  }
+
+  activateSpectralBoots(duration = 8000) {
+    this.spectralBootsTimer = Math.max(this.spectralBootsTimer, duration);
+    particleEffects.createDashTrail(this.player.sprite.x, this.player.sprite.y);
+    audioManager.playDash();
+  }
+
+  isSpectralBootsActive() {
+    return this.spectralBootsTimer > 0;
   }
 
   /**
@@ -1227,42 +1340,31 @@ export default class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Determine next level
-    let nextWorld = this.currentWorld;
-    let nextLevel = this.currentLevel + 1;
-
-    // Check if we need to advance to next world
-    if (nextLevel > 3) {
-      nextLevel = 1;
-      nextWorld++;
-    }
-
-    // Check if game is complete (only world 1 exists for MVP)
-    if (nextWorld > 1) {
-      console.log('🎊 Game Complete! All levels finished!');
-      // For now, restart from 1-1
-      nextWorld = 1;
-      nextLevel = 1;
-    }
-
+    const nextWorld = this.currentWorld;
+    const nextLevel = this.currentLevel + 1;
     const nextLevelKey = `level-${nextWorld}-${nextLevel}`;
+    const nextId = `${nextWorld}-${nextLevel}`;
 
-    // Check if next level exists
-    if (this.cache.json.has(nextLevelKey)) {
-      console.log(`📍 Loading next level: ${nextWorld}-${nextLevel}`);
-      this.scene.restart({
-        world: nextWorld,
-        level: nextLevel,
-        levelKey: nextLevelKey
-      });
-    } else {
-      console.log(`⚠️ Level ${nextLevelKey} not found. Restarting from 1-1.`);
-      this.scene.restart({
-        world: 1,
-        level: 1,
-        levelKey: 'level-1-1'
-      });
+    // If next level JSON is missing, return to level select
+    if (!this.cache.json.has(nextLevelKey)) {
+      console.log(`⚠️ Level ${nextLevelKey} not found. Returning to Level Select.`);
+      this.scene.start('LevelSelectScene');
+      return;
     }
+
+    // If locked (e.g., bonus stage), return to level select
+    if (!saveManager.isLevelUnlocked(nextId)) {
+      console.log(`🔒 Level ${nextId} locked. Returning to Level Select.`);
+      this.scene.start('LevelSelectScene');
+      return;
+    }
+
+    console.log(`📍 Loading next level: ${nextWorld}-${nextLevel}`);
+    this.scene.restart({
+      world: nextWorld,
+      level: nextLevel,
+      levelKey: nextLevelKey
+    });
   }
 
   /**

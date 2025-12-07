@@ -2,6 +2,7 @@ import Enemy, { EnemyState } from '../entities/Enemy.js';
 import Skitter from '../entities/Skitter.js';
 import BlinkBat from '../entities/BlinkBat.js';
 import SentryOrb from '../entities/SentryOrb.js';
+import BrickMimic from '../entities/BrickMimic.js';
 
 /**
  * EnemyManager - Handles enemy spawning, updating, and collision
@@ -27,6 +28,9 @@ export default class EnemyManager {
       'sentryorb': SentryOrb,
       'sentry_orb': SentryOrb,
       'orb': SentryOrb,
+      'brickmimic': BrickMimic,
+      'brick_mimic': BrickMimic,
+      'mimic': BrickMimic,
     };
 
     console.log('👾 EnemyManager: Initialized');
@@ -177,6 +181,9 @@ export default class EnemyManager {
 
       // Check for overlap
       if (Phaser.Geom.Intersects.RectangleToRectangle(playerBounds, enemyBounds)) {
+        if (enemy.onPlayerOverlap) {
+          enemy.onPlayerOverlap(player);
+        }
         result.hit = true;
 
         // Check stomp (player coming from above)
@@ -192,9 +199,9 @@ export default class EnemyManager {
           result.score += enemy.getScoreValue();
         }
         // Player takes damage
-        else {
-          enemy.onPlayerCollision(player);
-          result.damaged = true;
+        else if (enemy.isDangerous()) {
+          const shouldDamage = enemy.onPlayerCollision(player);
+          result.damaged = shouldDamage !== false;
         }
       }
     }

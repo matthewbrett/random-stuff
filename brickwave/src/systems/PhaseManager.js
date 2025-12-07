@@ -23,6 +23,7 @@ export default class PhaseManager {
 
     // Phase groups - allows for multiple synchronized brick groups
     this.groups = new Map();
+    this.freezeTimer = 0;
 
     // Create default phase group (group 0)
     this.createPhaseGroup(0, {
@@ -111,6 +112,11 @@ export default class PhaseManager {
    * Update all phase groups
    */
   update(time, delta) {
+    if (this.freezeTimer > 0) {
+      this.freezeTimer = Math.max(0, this.freezeTimer - delta);
+      return;
+    }
+
     this.groups.forEach(group => {
       this.updateGroup(group, delta);
     });
@@ -232,6 +238,18 @@ export default class PhaseManager {
     this.groups.forEach(group => {
       this.resetGroup(group.id);
     });
+  }
+
+  /**
+   * Temporarily freeze all phase updates
+   * @param {number} duration - Duration in ms
+   */
+  freezeFor(duration = 0) {
+    this.freezeTimer = Math.max(this.freezeTimer, duration);
+  }
+
+  isFrozen() {
+    return this.freezeTimer > 0;
   }
 
   /**
