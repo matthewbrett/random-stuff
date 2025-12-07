@@ -46,8 +46,9 @@ export default class GameScene extends Phaser.Scene {
 
   init(data) {
     // Level to load (default to 1-1)
-    this.currentWorld = data?.world || 1;
-    this.currentLevel = data?.level || 1;
+    // Use ?? instead of || to properly handle world/level 0
+    this.currentWorld = data?.world ?? 1;
+    this.currentLevel = data?.level ?? 1;
     this.levelKey = data?.levelKey || `level-${this.currentWorld}-${this.currentLevel}`;
   }
 

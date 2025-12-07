@@ -99,6 +99,7 @@ class SaveManager {
    */
   getDefaultProgress() {
     return {
+      'intro': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
       '1-1': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
       '1-2': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
       '1-3': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null }
@@ -250,10 +251,10 @@ class SaveManager {
    * @returns {boolean} Whether level is unlocked
    */
   isLevelUnlocked(levelId) {
-    // Level 1-1 is always unlocked
-    if (levelId === '1-1') return true;
+    // Intro level and 1-1 are always unlocked
+    if (levelId === 'intro' || levelId === '1-1') return true;
 
-    // Parse level ID
+    // Parse level ID for other levels
     const match = levelId.match(/^(\d+)-(\d+)$/);
     if (!match) return false;
 
