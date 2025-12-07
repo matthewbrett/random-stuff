@@ -102,7 +102,13 @@ class SaveManager {
       'intro': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
       '1-1': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
       '1-2': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
-      '1-3': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null }
+      '1-3': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
+      '1-4': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
+      '1-5': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
+      '1-6': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
+      '1-7': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
+      '1-8': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null },
+      '1-9': { bestTime: null, keyShards: 0, completed: false, bestScore: 0, bestRank: null }
     };
   }
 
@@ -260,6 +266,14 @@ class SaveManager {
 
     const world = parseInt(match[1], 10);
     const level = parseInt(match[2], 10);
+
+    // Bonus stage gating (1-9) - requires previous clear + shard threshold
+    if (level === 9) {
+      const prevLevelId = `${world}-${level - 1}`;
+      const prevProgress = this.getLevelProgress(prevLevelId);
+      const shardCount = this.getTotalKeyShards();
+      return prevProgress.completed && shardCount >= 12;
+    }
 
     // First level of each world requires completing previous world's last level
     // For now, just check if previous level in same world is completed

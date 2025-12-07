@@ -9,7 +9,7 @@ import transitionManager from '../systems/TransitionManager.js';
  * LevelSelectScene - Level selection screen
  *
  * Features:
- * - World 1 level list (1-1, 1-2, 1-3)
+ * - World 1 level list (intro, 1-1 through 1-8, bonus 1-9)
  * - Best times display
  * - Key shards collected indicator
  * - Lock/unlock states (based on progression)
@@ -25,9 +25,24 @@ export default class LevelSelectScene extends Phaser.Scene {
       { id: '1-1', name: 'Catacomb Entrance', unlocked: true, bestTime: null, keyShards: 0 },
       { id: '1-2', name: 'Phase Corridors', unlocked: true, bestTime: null, keyShards: 0 },
       { id: '1-3', name: 'The Vertical Descent', unlocked: true, bestTime: null, keyShards: 0 },
+      { id: '1-4', name: 'Guardian Antechamber', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '1-5', name: 'Anchor Depths', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '1-6', name: 'Spectral Steps', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '1-7', name: 'Shifting Gauntlet', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '1-8', name: 'Final Run', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '1-9', name: 'Echo Vault (Bonus)', unlocked: false, bestTime: null, keyShards: 0 },
     ];
 
     this.selectedIndex = 0;
+
+    // Grid layout to fit expanded level list
+    this.layout = {
+      startX: 30 * SCALE,
+      startY: 55 * SCALE,
+      spacingY: 24 * SCALE,
+      columnWidth: 150 * SCALE,
+      perColumn: 5
+    };
   }
 
   create() {
@@ -87,7 +102,8 @@ export default class LevelSelectScene extends Phaser.Scene {
     // Log total progress
     const completedCount = saveManager.getCompletedLevelCount();
     const totalShards = saveManager.getTotalKeyShards();
-    console.log(`📊 Progress: ${completedCount}/4 levels, ${totalShards}/11 key shards`);
+    const shardCapacity = this.levels.filter(l => l.id !== 'intro').length * 3;
+    console.log(`📊 Progress: ${completedCount}/${this.levels.length} levels, ${totalShards}/${shardCapacity} key shards`);
   }
 
   /**
@@ -138,15 +154,14 @@ export default class LevelSelectScene extends Phaser.Scene {
    * Create level list
    */
   createLevelList(centerX) {
-    const startY = 55 * SCALE;
-    const spacing = 28 * SCALE;
-    const leftX = 40 * SCALE;
-
     this.levelItems = [];
 
     this.levels.forEach((level, index) => {
-      const itemY = startY + index * spacing;
-      const item = this.createLevelItem(level, leftX, itemY, index);
+      const col = Math.floor(index / this.layout.perColumn);
+      const row = index % this.layout.perColumn;
+      const itemY = this.layout.startY + row * this.layout.spacingY;
+      const itemX = this.layout.startX + col * this.layout.columnWidth;
+      const item = this.createLevelItem(level, itemX, itemY, index);
       this.levelItems.push(item);
     });
 
@@ -295,6 +310,14 @@ export default class LevelSelectScene extends Phaser.Scene {
       'Enter: Play | Esc: Back',
       TextStyles.hint
     );
+
+    createCenteredText(
+      this,
+      centerX,
+      GAME_CONFIG.GAME_HEIGHT - 10 * SCALE,
+      'Bonus unlocks with 12 key shards',
+      { ...TextStyles.hint, fontSize: `${8 * SCALE}px` }
+    );
   }
 
   /**
@@ -342,10 +365,6 @@ export default class LevelSelectScene extends Phaser.Scene {
    * Update visual selection state
    */
   updateSelection() {
-    const startY = 55 * SCALE;
-    const spacing = 28 * SCALE;
-    const leftX = 40 * SCALE;
-
     // Update text colors
     this.levelItems.forEach((item, index) => {
       const isSelected = index === this.selectedIndex;
@@ -361,16 +380,20 @@ export default class LevelSelectScene extends Phaser.Scene {
     this.selectionIndicator.clear();
     this.selectionIndicator.lineStyle(2 * SCALE, 0x00ffff, 0.5);
 
-    const selectedY = startY + this.selectedIndex * spacing;
+    const col = Math.floor(this.selectedIndex / this.layout.perColumn);
+    const row = this.selectedIndex % this.layout.perColumn;
+    const selectedY = this.layout.startY + row * this.layout.spacingY;
+    const selectedX = this.layout.startX + col * this.layout.columnWidth;
+    const boxWidth = this.layout.columnWidth - 10 * SCALE;
     this.selectionIndicator.strokeRect(
-      leftX - 15 * SCALE,
+      selectedX - 10 * SCALE,
       selectedY - 5 * SCALE,
-      245 * SCALE,
+      boxWidth,
       25 * SCALE
     );
 
     // Add arrow
-    const arrowX = leftX - 25 * SCALE;
+    const arrowX = selectedX - 25 * SCALE;
     this.selectionIndicator.fillStyle(0x00ffff, 1);
     this.selectionIndicator.fillTriangle(
       arrowX, selectedY + 5 * SCALE,

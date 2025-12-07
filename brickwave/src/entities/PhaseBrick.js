@@ -21,6 +21,8 @@ export default class PhaseBrick {
 
     // Current phase state
     this.phaseState = PhaseState.SOLID;
+    this.lastStateChangeTime = scene.time.now;
+    this.lastSolidTime = this.lastStateChangeTime;
 
     // Main brick visual - positioned directly at (x, y), NOT in a container
     this.solidColor = 0x3b82f6; // Blue color for phase bricks
@@ -63,6 +65,10 @@ export default class PhaseBrick {
 
     const oldState = this.phaseState;
     this.phaseState = newState;
+    this.lastStateChangeTime = this.scene.time.now;
+    if (newState === PhaseState.SOLID) {
+      this.lastSolidTime = this.lastStateChangeTime;
+    }
     this.transitionTime = 0;
 
     // Don't disable the body - let the collision process callback handle whether to collide
@@ -213,6 +219,15 @@ export default class PhaseBrick {
    */
   getPhaseState() {
     return this.phaseState;
+  }
+
+  /**
+   * Can this brick support the player with a post-solid grace window?
+   */
+  canSupportWithGrace(graceMs = 0) {
+    if (this.isSolid()) return true;
+    const now = this.scene.time.now;
+    return now - this.lastSolidTime <= graceMs;
   }
 
   /**

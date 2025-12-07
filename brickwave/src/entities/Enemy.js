@@ -39,6 +39,9 @@ export default class Enemy {
     this.state = EnemyState.ACTIVE;
     this.facing = 1; // 1 = right, -1 = left
 
+    // Health (allow multi-hit enemies)
+    this.health = config.health ?? 1;
+
     // Create sprite (subclasses should override createSprite for custom visuals)
     this.createSprite();
 
@@ -132,7 +135,7 @@ export default class Enemy {
    * @param {Player} player - The player who stomped
    */
   onStomp(player) {
-    this.die();
+    this.takeHit();
 
     // Bounce the player up after stomp (scaled)
     player.sprite.body.setVelocityY(-150 * SCALE);
@@ -145,18 +148,48 @@ export default class Enemy {
    * @param {Player} player - The player who dashed
    */
   onDash(player) {
-    this.die();
+    this.takeHit();
 
     console.log(`💨 Enemy dashed! +${this.config.scoreValue}`);
   }
 
   /**
+   * Apply damage to this enemy
+   * @param {number} amount - Damage amount
+   */
+  takeHit(amount = 1) {
+    this.health -= amount;
+    if (this.health <= 0) {
+      this.die();
+    } else {
+      this.flashOnHit();
+    }
+  }
+
+  /**
+   * Flash briefly when taking damage but not dying
+   */
+  flashOnHit() {
+    if (!this.sprite) return;
+
+    this.scene.tweens.add({
+      targets: this.sprite,
+      alpha: { from: 0.3, to: 1 },
+      duration: 120,
+      yoyo: true,
+      repeat: 1
+    });
+  }
+
+  /**
    * Handle collision with player (player takes damage)
    * @param {Player} player - The player object
+   * @returns {boolean} True if the player should take damage
    */
   onPlayerCollision(player) {
     // TODO: Implement player damage/death in later phase
     console.log('💥 Player hit by enemy!');
+    return true;
   }
 
   /**
@@ -247,6 +280,21 @@ export default class Enemy {
    */
   getBounds() {
     return this.sprite.getBounds();
+  }
+
+  /**
+   * Whether this enemy should harm the player on contact
+   * Subclasses can override for special cases (e.g., disguised mimic)
+   */
+  isDangerous() {
+    return this.state === EnemyState.ACTIVE;
+  }
+
+  /**
+   * Optional hook when the player overlaps the enemy (before harm logic)
+   */
+  onPlayerOverlap(player) {
+    // Default: no-op
   }
 
   /**
