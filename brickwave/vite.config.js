@@ -22,5 +22,5 @@ export default defineConfig({
     minify: 'esbuild',
     sourcemap: false,
   },
-  base: './',
+  base: '/random-stuff/brickwave/',
 });

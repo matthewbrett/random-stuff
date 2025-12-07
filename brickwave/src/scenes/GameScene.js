@@ -35,13 +35,13 @@ export default class GameScene extends Phaser.Scene {
     console.log('🎮 GameScene: Preloading assets...');
 
     // Load all levels
-    this.load.json('level-intro', '/assets/levels/level-intro.json');
-    this.load.json('level-1-1', '/assets/levels/level-1-1.json');
-    this.load.json('level-1-2', '/assets/levels/level-1-2.json');
-    this.load.json('level-1-3', '/assets/levels/level-1-3.json');
+    this.load.json('level-0-0', 'assets/levels/level-0-0.json');
+    this.load.json('level-1-1', 'assets/levels/level-1-1.json');
+    this.load.json('level-1-2', 'assets/levels/level-1-2.json');
+    this.load.json('level-1-3', 'assets/levels/level-1-3.json');
 
     // Also load test level for backwards compatibility
-    this.load.json('testLevel1', '/assets/levels/test-level-1.json');
+    this.load.json('testLevel1', 'assets/levels/test-level-1.json');
   }
 
   init(data) {

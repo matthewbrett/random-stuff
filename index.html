@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matthew Brett's Projects</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 48px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      color: #2d3748;
+    }
+
+    .subtitle {
+      color: #718096;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    .projects {
+      list-style: none;
+    }
+
+    .project {
+      background: #f7fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .project:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+
+    .project a {
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+
+    .project-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin-bottom: 8px;
+    }
+
+    .project-description {
+      color: #4a5568;
+      line-height: 1.6;
+    }
+
+    .project-tag {
+      display: inline-block;
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-top: 12px;
+      font-weight: 500;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #a0aec0;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 32px 24px;
+      }
+
+      h1 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Projects</h1>
+    <p class="subtitle">A collection of web experiments and games</p>
+
+    <ul class="projects">
+      <li class="project">
+        <a href="/random-stuff/brickwave/">
+          <div class="project-title">🎮 BRICKWAVE</div>
+          <div class="project-description">
+            A fast, tight 2D pixel platformer with phase brick mechanics.
+            Navigate through rhythmic environments where blocks toggle between solid and ghost states.
+          </div>
+          <span class="project-tag">Game</span>
+        </a>
+      </li>
+
+      <!-- Add more projects here as you build them -->
+      <!--
+      <li class="project">
+        <a href="/random-stuff/your-next-app/">
+          <div class="project-title">📱 Your Next App</div>
+          <div class="project-description">
+            Description of your next project goes here.
+          </div>
+          <span class="project-tag">Web App</span>
+        </a>
+      </li>
+      -->
+    </ul>
+
+    <footer>
+      Built with care • <a href="https://github.com/matthewbrett" style="color: #667eea;">GitHub</a>
+    </footer>
+  </div>
+</body>
+</html>

@@ -3,10 +3,13 @@
   "version": "0.1.0",
   "description": "BRICKWAVE - A fast, tight 2D pixel platformer with phase brick mechanics",
   "type": "module",
+  "homepage": "https://matthewbrett.github.io/random-stuff/brickwave",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist -e brickwave"
   },
   "keywords": [
     "game",
@@ -21,6 +24,7 @@
     "phaser": "^3.80.1"
   },
   "devDependencies": {
+    "gh-pages": "^6.3.0",
     "playwright": "^1.57.0",
     "vite": "^5.0.0",
     "vite-plugin-static-copy": "^3.1.4"
