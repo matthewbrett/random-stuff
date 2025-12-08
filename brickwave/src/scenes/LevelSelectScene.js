@@ -32,6 +32,8 @@ export default class LevelSelectScene extends Phaser.Scene {
       { id: '1-8', name: 'Final Run', unlocked: false, bestTime: null, keyShards: 0 },
       { id: '1-9', name: 'Echo Vault (Bonus)', unlocked: false, bestTime: null, keyShards: 0 },
       { id: '2-1', name: 'Phase Gauntlet', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '2-2', name: 'Phase Lock Labyrinth', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '2-3', name: 'Threat Escalation', unlocked: false, bestTime: null, keyShards: 0 },
     ];
 
     this.selectedIndex = 0;

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME_CONFIG } from '../config.js';
 import { TextStyles, createCenteredText, createSmoothText } from '../utils/TextStyles.js';
 import audioManager from '../systems/AudioManager.js';
+import saveManager from '../systems/SaveManager.js';
 
 /**
  * BootScene - Initial loading and setup scene
@@ -24,6 +25,19 @@ export default class BootScene extends Phaser.Scene {
 
     // Initialize AudioManager
     audioManager.init(this);
+
+    // Initialize SaveManager
+    saveManager.init();
+
+    // Check for debug level parameter (?level=2-2)
+    const debugLevel = saveManager.checkDebugLevelParam();
+    if (debugLevel) {
+      console.log('🎮 BootScene: Debug level skip to', debugLevel);
+      this.time.delayedCall(100, () => {
+        this.scene.start('GameScene', debugLevel);
+      });
+      return;
+    }
 
     // Display a simple text message to verify Phaser is working
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;

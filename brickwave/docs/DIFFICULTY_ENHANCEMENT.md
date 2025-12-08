@@ -1,13 +1,14 @@
 # Difficulty Enhancement Plan for BRICKWAVE
 
-**STATUS: Phase 1 Complete ✅ | Phases 2-4 Planned 📋**
+**STATUS: Phase 1 Complete ✅ | Phase 3 Partial ✅ | Phases 2 & 4 Planned 📋**
 
 **Completed:**
 - ✅ Phase 1: Core Difficulty Foundations (B1: Scaled Key Shard Requirements, A1: Enemy Speed Scaling, A2: Enemy Count Scaling)
+- ✅ Phase 3 Partial: C2 Phase-Gated Progression (Level 2-2), A2 Content Support with Hard-Only Enemies (Level 2-3)
 
 **Next Steps:**
 - Phase 2: Fine-Tuning & Balance (health powerup, balance adjustments)
-- Phase 3: Content Enhancement (level design pass, phase-gated progression)
+- Phase 3: Content Enhancement (remaining level design pass)
 - Phase 4: Advanced Enhancements (chase enemies, lives system, etc.)
 
 ---
@@ -291,17 +292,25 @@ Player finds intermediate difficulty too easy when playing full progression (lev
    - Focus on levels identified as "too easy" in testing
    - Files: `assets/levels/*.json` (Tiled editing, not code)
 
-8. **C2: Phase-Gated Progression** (~2-4 hours)
+8. **C2: Phase-Gated Progression** ✅ IMPLEMENTED
    - Add mandatory phase timing sections (like 1-3 has)
    - Create "phase locks" where wrong timing = fall/death
    - Make phase mechanic feel more central to gameplay
    - Files: `assets/levels/*.json` (content work)
+   - **Implemented in:** Level 2-2 "Phase Lock Labyrinth"
+     - Multiple phase bridges over death pits
+     - Alternating phase groups (1 and 2) requiring timing
+     - 13 distinct phase-gated sections throughout the level
 
-9. **A2 Content Support: Add "Hard Only" Enemies** (~2-3 hours)
+9. **A2 Content Support: Add "Hard Only" Enemies** ✅ IMPLEMENTED
    - Go through Tiled maps and add enemies tagged "hard_only"
    - Place in strategic choke points or alternative paths
    - Ensures A2 system has enemies to spawn on Hard mode
    - Files: `assets/levels/*.json` (Tiled editing)
+   - **Implemented in:** Level 2-3 "Threat Escalation"
+     - 8 "hard_only" enemies placed at strategic chokepoints
+     - Guards key shard locations and exit on Hard difficulty
+     - Mix of Skitters, BlinkBats, and SentryOrbs with hard_only property
 
 **Testing checkpoint:** Full difficulty progression playthrough
 
@@ -387,5 +396,5 @@ Stop when difficulty feels right - don't over-engineer!
 
 ---
 
-**Last Updated:** 2025-12-07
-**Status:** Planning Document - Not Yet Implemented
+**Last Updated:** 2025-12-08
+**Status:** Partially Implemented - Phase 1 Complete, Phase 3 (C2, A2 Content) Complete
