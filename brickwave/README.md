@@ -51,7 +51,7 @@ brickwave/
 
 **MVP COMPLETE!** 🎉 All 10 development phases finished (Dec 2025).
 
-See [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md) for the complete phased development plan.
+See [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) for the complete phased development plan.
 
 ### What's Included:
 - ✅ 5 playable levels (intro + 3 main + 1 bonus)

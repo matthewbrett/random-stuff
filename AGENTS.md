@@ -5,8 +5,8 @@ This document provides guidelines for AI agents working with this repository.
 ## Repository Structure
 
 ### Root Layout
-- Root docs: `Overview.md` (repo description), `Game spec.md`, `DEVELOPMENT_PLAN.md`, `CLAUDE.md` (AI context), `BUILD_NARRATIVE.md` (development story), `AGENTS.md` (this file)
-- Main project: `brickwave/` (browser platformer game)
+- Root docs: `Overview.md` (repo description), `AGENTS.md` (this file - repository-wide guidelines)
+- Main project: `brickwave/` (browser platformer game) with all project docs in `brickwave/docs/`
 
 ### BRICKWAVE Project Structure
 - **Entry point:** `brickwave/src/main.js`
@@ -115,10 +115,10 @@ All commands run from `brickwave/` directory:
 
 ## Important Context Files
 
-Before making significant changes, review:
-- **[CLAUDE.md](CLAUDE.md)** - Project context and critical success factors
-- **[Game spec.md](Game%20spec.md)** - Game design specification
-- **[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)** - Development roadmap and current status
+Before making significant changes to BRICKWAVE, review:
+- **[brickwave/docs/CLAUDE.md](brickwave/docs/CLAUDE.md)** - Project context and critical success factors
+- **[brickwave/docs/Game spec.md](brickwave/docs/Game%20spec.md)** - Game design specification
+- **[brickwave/docs/DEVELOPMENT_PLAN.md](brickwave/docs/DEVELOPMENT_PLAN.md)** - Development roadmap and current status
 
 ---
 

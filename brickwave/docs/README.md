@@ -2,16 +2,29 @@
 
 This folder contains active documentation for the BRICKWAVE project.
 
-## Active Documents
+## Core Documentation
 
-### Planning & Enhancement
+### Game Design & Planning
+- **[Game spec.md](Game%20spec.md)** - Complete game design specification
+  - Core mechanics, controls, enemies, items, level structure
+- **[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)** - Phased development roadmap
+  - Status: All 10 phases complete ✅
+  - Detailed task lists and implementation notes per phase
+- **[CLAUDE.md](CLAUDE.md)** - AI assistant context and project guidelines
+  - Critical success factors, development workflow, key files reference
+
+### Development Story
+- **[BUILD_NARRATIVE.md](BUILD_NARRATIVE.md)** - Story of building BRICKWAVE in 3 days with AI
+  - Timeline, approach, lessons learned for engineers
+
+### Active Plans
 - **[DIFFICULTY_ENHANCEMENT.md](DIFFICULTY_ENHANCEMENT.md)** - Difficulty scaling system plan
   - Status: Phase 1 Complete ✅, Phases 2-4 Planned
-  - Covers enemy speed/count scaling, key shard requirements, and future enhancements
+  - Enemy speed/count scaling, key shard requirements, future enhancements
 
 ### Operations & Deployment
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment guide for sharing and publishing BRICKWAVE
-  - Covers GitHub Actions, manual deployment, mobile testing, and performance optimization
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment guide for sharing and publishing
+  - GitHub Actions, manual deployment, mobile testing, performance optimization
 
 ## Archived Documents
 
@@ -23,16 +36,14 @@ Completed and superseded planning documents are in [archive/](archive/):
 - **[RESOLUTION_PLAN.md](archive/RESOLUTION_PLAN.md)** - ✅ Completed (2025-12-06)
   - Dual-resolution support (Retro 320×180 / Polished 640×360) via SCALE multiplier
 
-## Root-Level Documentation
+## Other Project Documentation
 
-Key project documents in the repository root:
-
-- **[../README.md](../README.md)** - Project overview and quick start
+### BRICKWAVE Technical Docs
+- **[../README.md](../README.md)** - Project overview and quick start guide
 - **[../PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md)** - Complete file organization and architecture
-- **[../../Game spec.md](../../Game%20spec.md)** - Complete game design specification
-- **[../../DEVELOPMENT_PLAN.md](../../DEVELOPMENT_PLAN.md)** - Phased development roadmap (all 10 phases complete)
-- **[../../CLAUDE.md](../../CLAUDE.md)** - AI assistant context and project guidelines
-- **[../../BUILD_NARRATIVE.md](../../BUILD_NARRATIVE.md)** - Story of building BRICKWAVE in 3 days with AI
+
+### Repository-Level Docs
+- **[../../Overview.md](../../Overview.md)** - Repository overview (random-stuff)
 - **[../../AGENTS.md](../../AGENTS.md)** - Repository guidelines for AI agents
 
 ## Documentation Standards

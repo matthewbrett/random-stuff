@@ -12,15 +12,22 @@ A browser-based pixel platformer with a unique "phase brick" mechanic. **[MVP CO
 - **Play:** https://matthewbrett.github.io/random-stuff/brickwave/
 - **Tech:** Phaser 3, Vite, WebAudio
 - **Features:** 5 levels, mobile support, accessibility features, difficulty scaling
-- **Docs:** See [Game spec.md](Game%20spec.md), [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), [CLAUDE.md](CLAUDE.md)
+- **Docs:** See [brickwave/docs/](brickwave/docs/) for all BRICKWAVE documentation
 
-## Documentation
+## Repository Documentation
 
-- **[Game spec.md](Game%20spec.md)** - Complete game design specification for BRICKWAVE
-- **[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)** - Phased development roadmap (all 10 phases complete)
-- **[CLAUDE.md](CLAUDE.md)** - AI assistant context and project guidelines
-- **[BUILD_NARRATIVE.md](BUILD_NARRATIVE.md)** - Story of building BRICKWAVE in 3 days with AI assistance
-- **[AGENTS.md](AGENTS.md)** - Repository guidelines and coding conventions
+- **[AGENTS.md](AGENTS.md)** - Repository guidelines and coding conventions for AI agents
+
+## BRICKWAVE Documentation
+
+All BRICKWAVE-specific documentation is in [brickwave/docs/](brickwave/docs/):
+
+- **[Game spec.md](brickwave/docs/Game%20spec.md)** - Complete game design specification
+- **[DEVELOPMENT_PLAN.md](brickwave/docs/DEVELOPMENT_PLAN.md)** - Phased development roadmap (all 10 phases complete)
+- **[CLAUDE.md](brickwave/docs/CLAUDE.md)** - AI assistant context and project guidelines
+- **[BUILD_NARRATIVE.md](brickwave/docs/BUILD_NARRATIVE.md)** - Story of building BRICKWAVE in 3 days with AI
+- **[DEPLOYMENT.md](brickwave/docs/DEPLOYMENT.md)** - Deployment and sharing guide
+- **[DIFFICULTY_ENHANCEMENT.md](brickwave/docs/DIFFICULTY_ENHANCEMENT.md)** - Difficulty scaling system plan
 
 ## Quick Start
 

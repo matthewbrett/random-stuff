@@ -211,7 +211,7 @@ dist/
 
 **MVP COMPLETE!** All 10 development phases finished (Dec 2025).
 
-See [DEVELOPMENT_PLAN.md](../DEVELOPMENT_PLAN.md) for the complete phased development roadmap.
+See [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) for the complete phased development roadmap.
 
 **All Systems Implemented:**
 - ✅ Complete scene flow (Boot → Title → Level Select → Game → Results/Game Over)
