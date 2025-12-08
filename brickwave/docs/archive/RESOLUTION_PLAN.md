@@ -1,5 +1,11 @@
 # Dual-Resolution Support Plan
 
+**STATUS: ✅ COMPLETED (2025-12-06)**
+
+This plan has been fully implemented. The game now supports both Retro (320×180) and Polished (640×360) modes via SCALE multiplier. This document is archived for reference.
+
+---
+
 ## Overview
 Add toggle between Retro (320×180, 8×8 tiles) and Polished (640×360, 16×16 tiles) modes with restart-based switching.
 
