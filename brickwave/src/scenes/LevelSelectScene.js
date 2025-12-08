@@ -31,18 +31,21 @@ export default class LevelSelectScene extends Phaser.Scene {
       { id: '1-7', name: 'Shifting Gauntlet', unlocked: false, bestTime: null, keyShards: 0 },
       { id: '1-8', name: 'Final Run', unlocked: false, bestTime: null, keyShards: 0 },
       { id: '1-9', name: 'Echo Vault (Bonus)', unlocked: false, bestTime: null, keyShards: 0 },
+      { id: '2-1', name: 'Phase Gauntlet', unlocked: false, bestTime: null, keyShards: 0 },
     ];
 
     this.selectedIndex = 0;
 
-    // Grid layout to fit expanded level list
+    // Scrollable list layout
     this.layout = {
-      startX: 30 * SCALE,
-      startY: 55 * SCALE,
-      spacingY: 24 * SCALE,
-      columnWidth: 150 * SCALE,
-      perColumn: 5
+      startX: 20 * SCALE,
+      startY: 50 * SCALE,
+      spacingY: 22 * SCALE,
+      visibleItems: 6,
+      listWidth: 280 * SCALE,
+      listHeight: 132 * SCALE
     };
+    this.scrollOffset = 0;
   }
 
   create() {
@@ -151,22 +154,44 @@ export default class LevelSelectScene extends Phaser.Scene {
   }
 
   /**
-   * Create level list
+   * Create level list with scrolling support
    */
   createLevelList(centerX) {
     this.levelItems = [];
 
+    // Create container for all level items
+    this.listContainer = this.add.container(0, 0);
+
     this.levels.forEach((level, index) => {
-      const col = Math.floor(index / this.layout.perColumn);
-      const row = index % this.layout.perColumn;
-      const itemY = this.layout.startY + row * this.layout.spacingY;
-      const itemX = this.layout.startX + col * this.layout.columnWidth;
+      const itemY = this.layout.startY + index * this.layout.spacingY;
+      const itemX = this.layout.startX;
       const item = this.createLevelItem(level, itemX, itemY, index);
+      this.listContainer.add(item.container);
       this.levelItems.push(item);
     });
 
     // Create selection indicator
     this.selectionIndicator = this.add.graphics();
+
+    // Create scroll indicators
+    this.scrollUpIndicator = createSmoothText(
+      this,
+      centerX,
+      this.layout.startY - 8 * SCALE,
+      '▲ more',
+      { ...TextStyles.hint, fontSize: `${8 * SCALE}px`, color: '#00ffff' }
+    );
+    this.scrollUpIndicator.setOrigin(0.5);
+
+    this.scrollDownIndicator = createSmoothText(
+      this,
+      centerX,
+      this.layout.startY + this.layout.listHeight + 4 * SCALE,
+      '▼ more',
+      { ...TextStyles.hint, fontSize: `${8 * SCALE}px`, color: '#00ffff' }
+    );
+    this.scrollDownIndicator.setOrigin(0.5);
+
     this.updateSelection();
   }
 
@@ -362,17 +387,31 @@ export default class LevelSelectScene extends Phaser.Scene {
   }
 
   /**
-   * Update visual selection state
+   * Update visual selection state and handle scrolling
    */
   updateSelection() {
-    // Update text colors
+    // Calculate scroll offset to keep selection visible
+    const maxVisible = this.layout.visibleItems;
+    if (this.selectedIndex < this.scrollOffset) {
+      this.scrollOffset = this.selectedIndex;
+    } else if (this.selectedIndex >= this.scrollOffset + maxVisible) {
+      this.scrollOffset = this.selectedIndex - maxVisible + 1;
+    }
+
+    // Update container position for scrolling
+    const scrollY = -this.scrollOffset * this.layout.spacingY;
+    this.listContainer.y = scrollY;
+
+    // Update text colors and visibility
     this.levelItems.forEach((item, index) => {
       const isSelected = index === this.selectedIndex;
       const level = item.level;
-      const baseColor = level.unlocked ? '#ffffff' : '#666666';
-      const selectedColor = '#00ffff';
+      const isVisible = index >= this.scrollOffset && index < this.scrollOffset + maxVisible;
 
-      item.levelId.setColor(isSelected ? selectedColor : (level.unlocked ? '#00ffff' : '#666666'));
+      // Show/hide based on scroll position
+      item.container.setVisible(isVisible);
+
+      item.levelId.setColor(isSelected ? '#00ffff' : (level.unlocked ? '#00ffff' : '#666666'));
       item.levelName.setColor(isSelected ? '#ffffff' : (level.unlocked ? '#aaaaaa' : '#666666'));
     });
 
@@ -380,26 +419,29 @@ export default class LevelSelectScene extends Phaser.Scene {
     this.selectionIndicator.clear();
     this.selectionIndicator.lineStyle(2 * SCALE, 0x00ffff, 0.5);
 
-    const col = Math.floor(this.selectedIndex / this.layout.perColumn);
-    const row = this.selectedIndex % this.layout.perColumn;
-    const selectedY = this.layout.startY + row * this.layout.spacingY;
-    const selectedX = this.layout.startX + col * this.layout.columnWidth;
-    const boxWidth = this.layout.columnWidth - 10 * SCALE;
+    const visibleIndex = this.selectedIndex - this.scrollOffset;
+    const selectedY = this.layout.startY + visibleIndex * this.layout.spacingY;
+    const selectedX = this.layout.startX;
+    const boxWidth = this.layout.listWidth - 10 * SCALE;
     this.selectionIndicator.strokeRect(
       selectedX - 10 * SCALE,
       selectedY - 5 * SCALE,
       boxWidth,
-      25 * SCALE
+      20 * SCALE
     );
 
-    // Add arrow
-    const arrowX = selectedX - 25 * SCALE;
+    // Add arrow indicator
+    const arrowX = selectedX - 18 * SCALE;
     this.selectionIndicator.fillStyle(0x00ffff, 1);
     this.selectionIndicator.fillTriangle(
-      arrowX, selectedY + 5 * SCALE,
-      arrowX + 8 * SCALE, selectedY + 5 * SCALE,
-      arrowX + 4 * SCALE, selectedY + 10 * SCALE
+      arrowX, selectedY + 2 * SCALE,
+      arrowX, selectedY + 12 * SCALE,
+      arrowX + 8 * SCALE, selectedY + 7 * SCALE
     );
+
+    // Update scroll indicators visibility
+    this.scrollUpIndicator.setVisible(this.scrollOffset > 0);
+    this.scrollDownIndicator.setVisible(this.scrollOffset + maxVisible < this.levels.length);
   }
 
   /**
