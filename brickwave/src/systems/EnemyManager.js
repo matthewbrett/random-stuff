@@ -4,6 +4,7 @@ import BlinkBat from '../entities/BlinkBat.js';
 import SentryOrb from '../entities/SentryOrb.js';
 import BrickMimic from '../entities/BrickMimic.js';
 import saveManager from './SaveManager.js';
+import { SCALE } from '../config.js';
 
 /**
  * EnemyManager - Handles enemy spawning, updating, and collision
@@ -84,8 +85,9 @@ export default class EnemyManager {
     }
 
     // Calculate spawn position (Tiled uses bottom-left, we use center)
-    const x = obj.x + (obj.width || 8) / 2;
-    const y = obj.y - (obj.height || 8) / 2;
+    // Apply SCALE for resolution support
+    const x = (obj.x + (obj.width || 8) / 2) * SCALE;
+    const y = (obj.y - (obj.height || 8) / 2) * SCALE;
 
     // Spawn the enemy
     return this.spawn(type, x, y, config);

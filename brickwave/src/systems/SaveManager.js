@@ -519,6 +519,77 @@ class SaveManager {
     const ms = Math.floor((seconds % 1) * 100);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
   }
+
+  /**
+   * DEBUG: Force unlock a specific level (for testing)
+   * @param {string} levelId - Level identifier (e.g., '2-2')
+   */
+  debugUnlockLevel(levelId) {
+    // Parse the level ID to unlock all preceding levels
+    const match = levelId.match(/^(\d+)-(\d+)$/);
+    if (!match) {
+      console.warn('Invalid level ID format:', levelId);
+      return;
+    }
+
+    const targetWorld = parseInt(match[1], 10);
+    const targetLevel = parseInt(match[2], 10);
+
+    // Unlock intro
+    if (!this.progress['intro']) {
+      this.progress['intro'] = { bestTime: 1, keyShards: 3, completed: true, bestScore: 1000, bestRank: 'A' };
+    } else {
+      this.progress['intro'].completed = true;
+    }
+
+    // Unlock all levels up to and including the target
+    for (let w = 1; w <= targetWorld; w++) {
+      const maxLevel = (w === targetWorld) ? targetLevel - 1 : 9;
+      for (let l = 1; l <= maxLevel; l++) {
+        const id = `${w}-${l}`;
+        if (!this.progress[id]) {
+          this.progress[id] = { bestTime: 60, keyShards: 3, completed: true, bestScore: 1000, bestRank: 'B' };
+        } else {
+          this.progress[id].completed = true;
+          this.progress[id].keyShards = Math.max(this.progress[id].keyShards, 3);
+        }
+      }
+    }
+
+    this.saveProgress();
+    console.log(`DEBUG: Unlocked all levels up to ${levelId}`);
+  }
+
+  /**
+   * Check URL for debug level parameter (?level=2-2)
+   * @returns {Object|null} Level data to jump to, or null
+   */
+  checkDebugLevelParam() {
+    if (typeof window === 'undefined') return null;
+
+    const params = new URLSearchParams(window.location.search);
+    const levelParam = params.get('level');
+
+    if (!levelParam) return null;
+
+    // Handle special 'intro' case
+    if (levelParam === 'intro' || levelParam === '0-0') {
+      return { world: 0, level: 0, levelKey: 'level-0-0' };
+    }
+
+    // Parse world-level format (e.g., '2-2')
+    const match = levelParam.match(/^(\d+)-(\d+)$/);
+    if (match) {
+      const world = parseInt(match[1], 10);
+      const level = parseInt(match[2], 10);
+      // Auto-unlock levels up to this one
+      this.debugUnlockLevel(levelParam);
+      return { world, level, levelKey: `level-${world}-${level}` };
+    }
+
+    console.warn('Invalid level parameter:', levelParam);
+    return null;
+  }
 }
 
 // Export singleton instance

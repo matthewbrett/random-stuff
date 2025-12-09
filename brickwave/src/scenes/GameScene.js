@@ -47,6 +47,8 @@ export default class GameScene extends Phaser.Scene {
     this.load.json('level-1-8', 'assets/levels/level-1-8.json');
     this.load.json('level-1-9', 'assets/levels/level-1-9.json');
     this.load.json('level-2-1', 'assets/levels/level-2-1.json');
+    this.load.json('level-2-2', 'assets/levels/level-2-2.json');
+    this.load.json('level-2-3', 'assets/levels/level-2-3.json');
 
     // Also load test level for backwards compatibility
     this.load.json('testLevel1', 'assets/levels/test-level-1.json');
@@ -120,6 +122,7 @@ export default class GameScene extends Phaser.Scene {
     // Store collision groups for easy access
     this.platforms = levelInfo.collisionTiles;
     this.oneWayPlatforms = levelInfo.oneWayPlatforms;
+    this.hazardTiles = levelInfo.hazardTiles;
     this.phaseBricks = levelInfo.phaseBricks;
 
     // Register phase bricks with phase manager
@@ -145,6 +148,9 @@ export default class GameScene extends Phaser.Scene {
 
     // Setup collision with phase bricks
     this.setupPhaseBrickCollision();
+
+    // Setup hazard collision (instant death fire/spikes)
+    this.setupHazardCollision();
 
     // Create coins
     this.coins = [];
@@ -573,6 +579,30 @@ export default class GameScene extends Phaser.Scene {
         this
       );
     });
+  }
+
+  /**
+   * Setup collision with hazard tiles (fire/spikes = instant death)
+   */
+  setupHazardCollision() {
+    if (!this.hazardTiles) return;
+
+    this.physics.add.overlap(
+      this.player.sprite,
+      this.hazardTiles,
+      () => {
+        // Only trigger if player hasn't already died
+        if (this.player.isDead || this.levelComplete) return;
+
+        console.log('🔥 Player hit hazard tile!');
+
+        // Instant kill - set health to 0 and trigger death
+        this.player.currentHealth = 0;
+        this.player.die();
+      },
+      null,
+      this
+    );
   }
 
   /**

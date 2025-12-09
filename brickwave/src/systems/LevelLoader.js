@@ -39,6 +39,7 @@ export default class LevelLoader {
     // Create collision groups
     this.collisionTiles = this.scene.physics.add.staticGroup();
     this.oneWayPlatforms = this.scene.physics.add.staticGroup();
+    this.hazardTiles = this.scene.physics.add.staticGroup(); // Fire/spike tiles
     this.phaseBricks = []; // Reset phase bricks array
 
     // Process each layer
@@ -53,6 +54,7 @@ export default class LevelLoader {
     // Refresh collision bodies
     this.collisionTiles.refresh();
     this.oneWayPlatforms.refresh();
+    this.hazardTiles.refresh();
 
     // Set up world bounds
     this.scene.physics.world.setBounds(0, 0, this.levelWidth, this.levelHeight);
@@ -64,6 +66,7 @@ export default class LevelLoader {
       height: this.levelHeight,
       collisionTiles: this.collisionTiles,
       oneWayPlatforms: this.oneWayPlatforms,
+      hazardTiles: this.hazardTiles,
       phaseBricks: this.phaseBricks,
     };
   }
@@ -137,6 +140,8 @@ export default class LevelLoader {
       this.oneWayPlatforms.add(tile);
       // Make one-way platforms slightly transparent to distinguish them
       tile.setAlpha(0.8);
+    } else if (layerType === 'hazard') {
+      this.hazardTiles.add(tile);
     }
 
     // Add to layer group
@@ -171,6 +176,8 @@ export default class LevelLoader {
 
     if (name.includes('phase')) {
       return 'phase';
+    } else if (name.includes('hazard') || name.includes('fire') || name.includes('spike')) {
+      return 'hazard';
     } else if (name.includes('solid') || name.includes('collision')) {
       return 'solid';
     } else if (name.includes('oneway') || name.includes('platform')) {
@@ -210,6 +217,7 @@ export default class LevelLoader {
       oneway: [0x94a3b8, 0xa8b8cc],
       background: [0x1e293b, 0x334155],
       foreground: [0x0f172a, 0x1e293b],
+      hazard: [0xff4500, 0xff6600, 0xff3300], // Fire/lava colors (orange-red)
     };
 
     const palette = colors[layerType] || colors.solid;
@@ -234,6 +242,9 @@ export default class LevelLoader {
     }
     if (this.oneWayPlatforms) {
       this.oneWayPlatforms.clear(true, true);
+    }
+    if (this.hazardTiles) {
+      this.hazardTiles.clear(true, true);
     }
 
     // Destroy phase bricks
