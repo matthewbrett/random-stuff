@@ -733,11 +733,6 @@ export default class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    // Update input manager first (tracks touch state transitions)
-    if (inputManager) {
-      inputManager.update();
-    }
-
     // Skip updates when paused (except HUD for visual consistency)
     if (this.isPaused) {
       // Only update HUD during pause
@@ -849,6 +844,11 @@ export default class GameScene extends Phaser.Scene {
     // Update HUD
     if (this.hud) {
       this.hud.update(time, delta);
+    }
+
+    // Update input manager at end of frame (tracks touch state transitions for next frame)
+    if (inputManager) {
+      inputManager.update();
     }
   }
 
