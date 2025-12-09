@@ -34,6 +34,13 @@ class InputManager {
       dash: false,
       down: false,
     };
+    this.prevTouchState = {
+      left: false,
+      right: false,
+      jump: false,
+      dash: false,
+      down: false,
+    };
     this.isTouchDevice = false;
     this.touchControlsVisible = false;
     this.initialized = false;
@@ -182,6 +189,12 @@ class InputManager {
    * @returns {boolean} Whether the action was just pressed
    */
   justDown(action) {
+    // Check touch state transition (just became true)
+    if (this.touchState[action] && !this.prevTouchState[action]) {
+      return true;
+    }
+
+    // Check keyboard
     const actionKeys = this.keys[action];
     if (actionKeys) {
       return actionKeys.some(key => key && Phaser.Input.Keyboard.JustDown(key));
@@ -344,6 +357,19 @@ class InputManager {
     if (this.touchControls) {
       this.touchControls.setAlpha(alpha);
     }
+  }
+
+  /**
+   * Update method - call this every frame to track input state changes
+   * This is necessary for justDown() to work with touch controls
+   */
+  update() {
+    // Copy current touch state to previous state for next frame
+    this.prevTouchState.left = this.touchState.left;
+    this.prevTouchState.right = this.touchState.right;
+    this.prevTouchState.jump = this.touchState.jump;
+    this.prevTouchState.dash = this.touchState.dash;
+    this.prevTouchState.down = this.touchState.down;
   }
 
   /**
