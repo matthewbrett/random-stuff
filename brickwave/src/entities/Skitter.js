@@ -157,7 +157,7 @@ export default class Skitter extends Enemy {
   /**
    * Update horizontal movement
    */
-  updateMovement(time, delta) {
+  updateMovement(_time, _delta) {
     // Move in facing direction
     this.sprite.body.setVelocityX(this.config.speed * this.facing);
   }

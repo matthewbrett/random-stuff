@@ -1,4 +1,3 @@
-import Enemy, { EnemyState } from '../entities/Enemy.js';
 import Skitter from '../entities/Skitter.js';
 import BlinkBat from '../entities/BlinkBat.js';
 import SentryOrb from '../entities/SentryOrb.js';
@@ -39,6 +38,7 @@ export default class EnemyManager {
       'mimic': BrickMimic,
     };
 
+    // eslint-disable-next-line no-console
     console.log('👾 EnemyManager: Initialized');
   }
 
@@ -61,6 +61,7 @@ export default class EnemyManager {
       }
     });
 
+    // eslint-disable-next-line no-console
     console.log(`👾 EnemyManager: Spawned ${this.enemies.length} enemies`);
   }
 

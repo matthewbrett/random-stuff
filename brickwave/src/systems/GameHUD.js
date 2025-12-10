@@ -163,7 +163,7 @@ export default class GameHUD {
     });
 
     // Key shard collected
-    this.scene.events.on('keyShardCollected', (shardIndex, totalShards) => {
+    this.scene.events.on('keyShardCollected', (_shardIndex, _totalShards) => {
       this.updateKeyShards();
       this.flashKeyShards();
     });
@@ -381,7 +381,7 @@ export default class GameHUD {
    * @param {number} time - Current game time
    * @param {number} delta - Time since last frame
    */
-  update(time, delta) {
+  update(_time, _delta) {
     // Update time display
     this.updateTime();
 

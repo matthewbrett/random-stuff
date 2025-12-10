@@ -427,7 +427,6 @@ export default class Player {
    * - Player is not pressing down (for drop-through)
    */
   checkOneWayCollision(player, platform) {
-    const playerBottom = player.body.y + player.body.height;
     const platformTop = platform.body.y;
     const isMovingDown = player.body.velocity.y >= 0;
     const isAbovePlatform = player.body.prev.y + player.body.height <= platformTop + 4;
@@ -518,7 +517,7 @@ export default class Player {
     }
   }
 
-  handleHorizontalMovement(delta) {
+  handleHorizontalMovement(_delta) {
     const body = this.sprite.body;
     // Use inputManager for unified input (keyboard + touch)
     const leftPressed = inputManager.isDown('left');
@@ -649,6 +648,7 @@ export default class Player {
     this.isDashing = false;
     this.dashTime = 0;
     this.sprite.body.setAccelerationX(0);
+    // eslint-disable-next-line no-console
     console.log('🎮 Player: Dash ended');
   }
 

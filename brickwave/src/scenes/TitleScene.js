@@ -24,6 +24,7 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   create() {
+    // eslint-disable-next-line no-console
     console.log('🎮 TitleScene: Creating title screen...');
 
     // Initialize audio manager with this scene
@@ -192,7 +193,7 @@ export default class TitleScene extends Phaser.Scene {
    */
   createFooter(centerX) {
     // Controls hint
-    const controlsText = createCenteredText(
+    createCenteredText(
       this,
       centerX,
       GAME_CONFIG.GAME_HEIGHT - 20 * SCALE,
@@ -425,6 +426,7 @@ export default class TitleScene extends Phaser.Scene {
   startAttractMode() {
     // For MVP, just start the first level
     // In future, this could show a recorded demo
+    // eslint-disable-next-line no-console
     console.log('Starting attract mode demo...');
     this.scene.start('GameScene', {
       world: 1,

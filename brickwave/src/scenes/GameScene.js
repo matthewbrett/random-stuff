@@ -32,6 +32,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
+    // eslint-disable-next-line no-console
     console.log('🎮 GameScene: Preloading assets...');
 
     // Load all levels
@@ -62,6 +63,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
+    // eslint-disable-next-line no-console
     console.log('🎮 GameScene: Initializing...');
 
     // Initialize save manager
@@ -405,6 +407,7 @@ export default class GameScene extends Phaser.Scene {
         // Only trigger if player hasn't already died
         if (this.player.isDead || this.levelComplete) return;
 
+        // eslint-disable-next-line no-console
         console.log('🔥 Player hit hazard tile!');
 
         // Instant kill - set health to 0 and trigger death
@@ -437,6 +440,7 @@ export default class GameScene extends Phaser.Scene {
 
     // If no coins found in level data, create some test coins
     if (this.coins.length === 0) {
+      // eslint-disable-next-line no-console
       console.log('No coins found in level, creating test coins...');
       // Create a line of test coins (scaled positions)
       for (let i = 0; i < 10; i++) {
@@ -840,9 +844,13 @@ export default class GameScene extends Phaser.Scene {
       this.showCompletionScreen();
     });
 
+    // eslint-disable-next-line no-console
     console.log('🎉 Level Complete!');
+    // eslint-disable-next-line no-console
     console.log(`World ${this.currentWorld}-${this.currentLevel} completed!`);
+    // eslint-disable-next-line no-console
     console.log(`Time: ${this.scoreManager.getFormattedTime()}`);
+    // eslint-disable-next-line no-console
     console.log(`Key Shards: ${this.scoreManager.getKeyShardCount()}/3`);
   }
 
@@ -879,15 +887,19 @@ export default class GameScene extends Phaser.Scene {
 
     // Log improvements for debugging
     if (improvements.firstCompletion) {
+      // eslint-disable-next-line no-console
       console.log('🎉 First time completing this level!');
     }
     if (improvements.newBestTime) {
+      // eslint-disable-next-line no-console
       console.log('⏱️ New best time!');
     }
     if (improvements.newBestScore) {
+      // eslint-disable-next-line no-console
       console.log('🏆 New best score!');
     }
     if (improvements.newKeyShards) {
+      // eslint-disable-next-line no-console
       console.log('🔑 New key shard record!');
     }
 
@@ -928,6 +940,7 @@ export default class GameScene extends Phaser.Scene {
   advanceToNextLevel() {
     // Special case: Intro level advances to 1-1
     if (this.currentWorld === 0 && this.currentLevel === 0) {
+      // eslint-disable-next-line no-console
       console.log('📍 Completing intro level, advancing to 1-1');
       this.scene.restart({
         world: 1,
@@ -944,6 +957,7 @@ export default class GameScene extends Phaser.Scene {
 
     // If next level JSON is missing, return to level select
     if (!this.cache.json.has(nextLevelKey)) {
+      // eslint-disable-next-line no-console
       console.log(`⚠️ Level ${nextLevelKey} not found. Returning to Level Select.`);
       this.scene.start('LevelSelectScene');
       return;
@@ -951,11 +965,13 @@ export default class GameScene extends Phaser.Scene {
 
     // If locked (e.g., bonus stage), return to level select
     if (!saveManager.isLevelUnlocked(nextId)) {
+      // eslint-disable-next-line no-console
       console.log(`🔒 Level ${nextId} locked. Returning to Level Select.`);
       this.scene.start('LevelSelectScene');
       return;
     }
 
+    // eslint-disable-next-line no-console
     console.log(`📍 Loading next level: ${nextWorld}-${nextLevel}`);
     this.scene.restart({
       world: nextWorld,
@@ -999,6 +1015,7 @@ export default class GameScene extends Phaser.Scene {
     const tookDamage = this.player.takeDamage();
 
     if (tookDamage) {
+      // eslint-disable-next-line no-console
       console.log(`💔 Player damaged! Health: ${this.player.currentHealth}/${this.player.maxHealth}`);
     }
   }
@@ -1007,6 +1024,7 @@ export default class GameScene extends Phaser.Scene {
    * Handle player death
    */
   handlePlayerDeath() {
+    // eslint-disable-next-line no-console
     console.log('💀 Player died!');
 
     // Stop timer

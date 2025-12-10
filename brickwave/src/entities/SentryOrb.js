@@ -183,6 +183,7 @@ export default class SentryOrb extends Enemy {
     this.die();
     player.sprite.body.setVelocityY(-200 * SCALE);
 
+    // eslint-disable-next-line no-console
     console.log(`🔮 Sentry Orb bounced! +${this.config.scoreValue}`);
   }
 

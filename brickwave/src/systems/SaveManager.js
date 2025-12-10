@@ -56,6 +56,7 @@ class SaveManager {
   migrateSave(fromVersion, toVersion) {
     // Version 0 -> 1: Initial format, no migration needed
     // Future migrations can be added here as needed
+    // eslint-disable-next-line no-console
     console.log(`Save migrated from v${fromVersion} to v${toVersion}`);
   }
 
@@ -70,8 +71,8 @@ class SaveManager {
       } else {
         this.progress = this.getDefaultProgress();
       }
-    } catch (e) {
-      console.error('Failed to load progress:', e);
+    } catch (_e) {
+      console.error('Failed to load progress:', _e);
       this.progress = this.getDefaultProgress();
     }
   }
@@ -87,8 +88,8 @@ class SaveManager {
       } else {
         this.globalStats = this.getDefaultGlobalStats();
       }
-    } catch (e) {
-      console.error('Failed to load global stats:', e);
+    } catch (_e) {
+      console.error('Failed to load global stats:', _e);
       this.globalStats = this.getDefaultGlobalStats();
     }
   }
@@ -134,8 +135,8 @@ class SaveManager {
   saveProgress() {
     try {
       localStorage.setItem(SAVE_KEYS.PROGRESS, JSON.stringify(this.progress));
-    } catch (e) {
-      console.error('Failed to save progress:', e);
+    } catch (_e) {
+      console.error('Failed to save progress:', _e);
     }
   }
 
@@ -145,8 +146,8 @@ class SaveManager {
   saveGlobalStats() {
     try {
       localStorage.setItem(SAVE_KEYS.GLOBAL_STATS, JSON.stringify(this.globalStats));
-    } catch (e) {
-      console.error('Failed to save global stats:', e);
+    } catch (_e) {
+      console.error('Failed to save global stats:', _e);
     }
   }
 
@@ -372,7 +373,7 @@ class SaveManager {
       }
 
       return { success: true, message: 'Save imported successfully' };
-    } catch (e) {
+    } catch {
       return { success: false, message: 'Failed to parse save data' };
     }
   }
@@ -385,7 +386,7 @@ class SaveManager {
     try {
       const saved = localStorage.getItem(SAVE_KEYS.SETTINGS);
       return saved ? JSON.parse(saved) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   }
@@ -557,6 +558,7 @@ class SaveManager {
     }
 
     this.saveProgress();
+    // eslint-disable-next-line no-console
     console.log(`DEBUG: Unlocked all levels up to ${levelId}`);
   }
 

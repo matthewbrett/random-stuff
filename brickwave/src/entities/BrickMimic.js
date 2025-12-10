@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import Enemy, { EnemyState } from './Enemy.js';
 import { SCALE } from '../config.js';
 

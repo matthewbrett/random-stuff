@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { PhaseState } from '../systems/PhaseManager.js';
-import { GAME_CONFIG, SCALE } from '../config.js';
+import { SCALE } from '../config.js';
 import saveManager from '../systems/SaveManager.js';
 
 /**
