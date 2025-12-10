@@ -6,10 +6,12 @@ pnpm-lock.yaml
 # Build output
 dist/
 build/
+coverage/
 
 # Editor directories and files
 .vscode/
 .idea/
+.claude/
 *.suo
 *.ntvs*
 *.njsproj
