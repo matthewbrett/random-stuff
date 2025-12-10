@@ -12,7 +12,7 @@
 | Phase | Status | Completed |
 |-------|--------|-----------|
 | 1.1 Add Vitest + Initial Tests | ✅ COMPLETE | Dec 2025 (PR #32) |
-| 1.2 Extract UI from GameScene | ⏸️ PENDING | - |
+| 1.2 Extract UI from GameScene | ✅ COMPLETE | Dec 2025 |
 | 1.3 Add ESLint | ⏸️ PENDING | - |
 
 ---
@@ -111,8 +111,9 @@ All objectives achieved in PR #32:
 
 ---
 
-### 1.2 Extract UI from GameScene
+### 1.2 Extract UI from GameScene ✅ COMPLETE
 **Effort:** 4-8 hours | **Priority:** Critical
+**Status:** ✅ Completed (Dec 2025)
 
 **Goal:** Reduce GameScene.js from 1,516 lines by extracting UI components.
 
@@ -190,6 +191,17 @@ All objectives achieved in PR #32:
 
 **Files to Modify:**
 - `src/scenes/GameScene.js` (major refactor)
+
+**✅ Completion Summary:**
+All objectives achieved (Dec 2025):
+- ✅ Created `src/ui/` directory structure
+- ✅ Created `MenuController.js` (74 lines) - reusable menu navigation with wrap-around
+- ✅ Created `PauseMenuManager.js` (229 lines) - pause menu UI and navigation
+- ✅ Created `CompletionScreenManager.js` (320 lines) - level completion screen with rank calculation
+- ✅ Updated `GameScene.js` to use new UI managers via event-based communication
+- ✅ **Line reduction: 1,516 → 1,034 lines (482 lines removed, exceeds 400+ target)**
+- ✅ All 63 existing tests pass (no regressions)
+- ✅ Clean separation of concerns - UI logic now in dedicated managers
 
 ---
 

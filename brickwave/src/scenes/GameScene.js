@@ -16,7 +16,8 @@ import audioManager from '../systems/AudioManager.js';
 import particleEffects from '../systems/ParticleEffects.js';
 import transitionManager from '../systems/TransitionManager.js';
 import inputManager from '../systems/InputManager.js';
-import { TextStyles, createSmoothText, createCenteredText } from '../utils/TextStyles.js';
+import PauseMenuManager from '../ui/PauseMenuManager.js';
+import CompletionScreenManager from '../ui/CompletionScreenManager.js';
 
 /**
  * GameScene - Main gameplay scene
@@ -26,10 +27,8 @@ export default class GameScene extends Phaser.Scene {
   constructor() {
     super({ key: 'GameScene' });
 
-    // Pause menu state
+    // Pause state (menu managed by PauseMenuManager)
     this.isPaused = false;
-    this.pauseMenuItems = ['RESUME', 'RESTART', 'LEVEL SELECT', 'QUIT TO TITLE'];
-    this.pauseSelectedIndex = 0;
   }
 
   preload() {
@@ -219,8 +218,14 @@ export default class GameScene extends Phaser.Scene {
 
     // Initialize pause state
     this.isPaused = false;
-    this.pauseSelectedIndex = 0;
-    this.pauseOverlay = null;
+
+    // Initialize UI managers
+    this.pauseMenuManager = new PauseMenuManager(this);
+    this.completionScreenManager = new CompletionScreenManager(this);
+
+    // Setup UI manager event handlers
+    this.events.on('pauseMenuAction', this.handlePauseMenuAction, this);
+    this.events.on('completionMenuAction', this.handleCompletionMenuAction, this);
 
     // Setup shutdown handler to clean up before scene restart
     this.events.once('shutdown', this.shutdown, this);
@@ -265,7 +270,6 @@ export default class GameScene extends Phaser.Scene {
     if (this.isPaused) return;
 
     this.isPaused = true;
-    this.pauseSelectedIndex = 0;
 
     // Pause physics
     this.physics.pause();
@@ -275,8 +279,13 @@ export default class GameScene extends Phaser.Scene {
       this.scoreManager.stopTimer();
     }
 
-    // Create pause overlay
-    this.showPauseMenu();
+    // Show pause menu with current stats
+    this.pauseMenuManager.show({
+      world: this.currentWorld,
+      level: this.currentLevel,
+      time: this.scoreManager.getFormattedTime(),
+      score: this.scoreManager.getScore()
+    });
   }
 
   /**
@@ -296,231 +305,31 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // Hide pause menu
-    this.hidePauseMenu();
+    this.pauseMenuManager.hide();
   }
 
   /**
-   * Show pause menu overlay
+   * Handle pause menu action events
+   * @param {string} action - The selected action
    */
-  showPauseMenu() {
-    const centerX = GAME_CONFIG.GAME_WIDTH / 2;
-
-    // Semi-transparent overlay
-    const overlay = this.add.graphics();
-    overlay.fillStyle(0x000000, 0.85);
-    overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setScrollFactor(0);
-    overlay.setDepth(3000);
-
-    // Pause title
-    const title = createCenteredText(
-      this,
-      centerX,
-      35 * SCALE,
-      'PAUSED',
-      TextStyles.title
-    );
-    title.setScrollFactor(0);
-    title.setDepth(3001);
-
-    // Current level info
-    const levelInfo = createCenteredText(
-      this,
-      centerX,
-      55 * SCALE,
-      `World ${this.currentWorld}-${this.currentLevel}`,
-      TextStyles.hint
-    );
-    levelInfo.setScrollFactor(0);
-    levelInfo.setDepth(3001);
-
-    // Current stats
-    const statsText = createCenteredText(
-      this,
-      centerX,
-      70 * SCALE,
-      `Time: ${this.scoreManager.getFormattedTime()} | Score: ${this.scoreManager.getScore()}`,
-      { ...TextStyles.hint, fontSize: `${8 * SCALE}px` }
-    );
-    statsText.setScrollFactor(0);
-    statsText.setDepth(3001);
-
-    // Menu items
-    const menuStartY = 90 * SCALE;
-    const menuSpacing = 14 * SCALE;
-    const menuTexts = [];
-
-    this.pauseMenuItems.forEach((item, index) => {
-      const isSelected = index === this.pauseSelectedIndex;
-      const style = isSelected ? TextStyles.menuItemSelected : TextStyles.menuItem;
-
-      const text = createCenteredText(
-        this,
-        centerX,
-        menuStartY + index * menuSpacing,
-        item,
-        style
-      );
-      text.setScrollFactor(0);
-      text.setDepth(3001);
-      menuTexts.push(text);
-    });
-
-    // Selection arrow
-    const arrow = createCenteredText(
-      this,
-      centerX - 60 * SCALE,
-      menuStartY,
-      '>',
-      TextStyles.menuItemSelected
-    );
-    arrow.setScrollFactor(0);
-    arrow.setDepth(3001);
-
-    // Pulse the arrow
-    this.tweens.add({
-      targets: arrow,
-      alpha: 0.3,
-      duration: 500,
-      yoyo: true,
-      repeat: -1
-    });
-
-    // Controls hint
-    const hint = createCenteredText(
-      this,
-      centerX,
-      GAME_CONFIG.GAME_HEIGHT - 15 * SCALE,
-      'R: Instant Restart',
-      { ...TextStyles.hint, fontSize: `${8 * SCALE}px` }
-    );
-    hint.setScrollFactor(0);
-    hint.setDepth(3001);
-
-    // Store references for cleanup
-    this.pauseOverlay = {
-      overlay,
-      title,
-      levelInfo,
-      statsText,
-      menuTexts,
-      arrow,
-      hint
-    };
-
-    // Setup pause menu navigation
-    this.setupPauseMenuInput();
-  }
-
-  /**
-   * Setup pause menu navigation
-   */
-  setupPauseMenuInput() {
-    // Remove existing listeners first
-    this.input.keyboard.off('keydown-UP', this.pauseMenuUp, this);
-    this.input.keyboard.off('keydown-DOWN', this.pauseMenuDown, this);
-    this.input.keyboard.off('keydown-W', this.pauseMenuUp, this);
-    this.input.keyboard.off('keydown-S', this.pauseMenuDown, this);
-    this.input.keyboard.off('keydown-ENTER', this.pauseMenuConfirm, this);
-    this.input.keyboard.off('keydown-SPACE', this.pauseMenuConfirm, this);
-
-    // Add pause menu navigation
-    this.input.keyboard.on('keydown-UP', this.pauseMenuUp, this);
-    this.input.keyboard.on('keydown-DOWN', this.pauseMenuDown, this);
-    this.input.keyboard.on('keydown-W', this.pauseMenuUp, this);
-    this.input.keyboard.on('keydown-S', this.pauseMenuDown, this);
-    this.input.keyboard.on('keydown-ENTER', this.pauseMenuConfirm, this);
-    this.input.keyboard.on('keydown-SPACE', this.pauseMenuConfirm, this);
-  }
-
-  /**
-   * Navigate pause menu up
-   */
-  pauseMenuUp() {
-    if (!this.isPaused) return;
-    this.pauseSelectedIndex = (this.pauseSelectedIndex - 1 + this.pauseMenuItems.length) % this.pauseMenuItems.length;
-    this.updatePauseMenuSelection();
-  }
-
-  /**
-   * Navigate pause menu down
-   */
-  pauseMenuDown() {
-    if (!this.isPaused) return;
-    this.pauseSelectedIndex = (this.pauseSelectedIndex + 1) % this.pauseMenuItems.length;
-    this.updatePauseMenuSelection();
-  }
-
-  /**
-   * Confirm pause menu selection
-   */
-  pauseMenuConfirm() {
-    if (!this.isPaused) return;
-
-    const selected = this.pauseMenuItems[this.pauseSelectedIndex];
-
-    switch (selected) {
-      case 'RESUME':
+  handlePauseMenuAction(action) {
+    switch (action) {
+      case 'resume':
         this.resumeGame();
         break;
-      case 'RESTART':
-        this.hidePauseMenu();
+      case 'restart':
+        this.pauseMenuManager.hide();
         this.instantRestart();
         break;
-      case 'LEVEL SELECT':
-        this.hidePauseMenu();
+      case 'level_select':
+        this.pauseMenuManager.hide();
         this.scene.start('LevelSelectScene');
         break;
-      case 'QUIT TO TITLE':
-        this.hidePauseMenu();
+      case 'quit':
+        this.pauseMenuManager.hide();
         this.scene.start('TitleScene');
         break;
     }
-  }
-
-  /**
-   * Update pause menu selection visuals
-   */
-  updatePauseMenuSelection() {
-    if (!this.pauseOverlay) return;
-
-    const menuStartY = 90 * SCALE;
-    const menuSpacing = 14 * SCALE;
-
-    // Update menu item styles
-    this.pauseOverlay.menuTexts.forEach((text, index) => {
-      const isSelected = index === this.pauseSelectedIndex;
-      text.setStyle(isSelected ? TextStyles.menuItemSelected : TextStyles.menuItem);
-    });
-
-    // Move arrow
-    this.pauseOverlay.arrow.y = menuStartY + this.pauseSelectedIndex * menuSpacing;
-  }
-
-  /**
-   * Hide pause menu overlay
-   */
-  hidePauseMenu() {
-    if (!this.pauseOverlay) return;
-
-    // Destroy all pause menu elements
-    this.pauseOverlay.overlay.destroy();
-    this.pauseOverlay.title.destroy();
-    this.pauseOverlay.levelInfo.destroy();
-    this.pauseOverlay.statsText.destroy();
-    this.pauseOverlay.menuTexts.forEach(text => text.destroy());
-    this.pauseOverlay.arrow.destroy();
-    this.pauseOverlay.hint.destroy();
-
-    this.pauseOverlay = null;
-
-    // Remove pause menu input listeners
-    this.input.keyboard.off('keydown-UP', this.pauseMenuUp, this);
-    this.input.keyboard.off('keydown-DOWN', this.pauseMenuDown, this);
-    this.input.keyboard.off('keydown-W', this.pauseMenuUp, this);
-    this.input.keyboard.off('keydown-S', this.pauseMenuDown, this);
-    this.input.keyboard.off('keydown-ENTER', this.pauseMenuConfirm, this);
-    this.input.keyboard.off('keydown-SPACE', this.pauseMenuConfirm, this);
   }
 
   /**
@@ -547,15 +356,17 @@ export default class GameScene extends Phaser.Scene {
       this.hud.destroy();
     }
 
-    // Clean up pause overlay if it exists
-    if (this.pauseOverlay) {
-      this.hidePauseMenu();
+    // Clean up UI managers
+    if (this.pauseMenuManager) {
+      this.pauseMenuManager.destroy();
+    }
+    if (this.completionScreenManager) {
+      this.completionScreenManager.destroy();
     }
 
-    // Clean up completion overlay if it exists
-    if (this.completionOverlay) {
-      this.cleanupCompletionOverlay();
-    }
+    // Remove UI event listeners
+    this.events.off('pauseMenuAction', this.handlePauseMenuAction, this);
+    this.events.off('completionMenuAction', this.handleCompletionMenuAction, this);
 
     // Clean up input manager
     inputManager.destroy();
@@ -1036,49 +847,32 @@ export default class GameScene extends Phaser.Scene {
   }
 
   /**
-   * Calculate rank based on performance
-   * @returns {object} Rank info with letter, color, and description
-   */
-  calculateRank() {
-    const timeSeconds = this.scoreManager.getLevelTimeSeconds();
-    const keyShards = this.scoreManager.getKeyShardCount();
-    const totalScore = this.scoreManager.getTotalScore();
-
-    // S Rank: Under target time, all shards, high score
-    if (timeSeconds <= this.targetTime * 0.6 && keyShards === 3) {
-      return { letter: 'S', color: '#ffff00', description: 'PERFECT!' };
-    }
-    // A Rank: Under target time or all shards
-    if (timeSeconds <= this.targetTime * 0.8 || keyShards === 3) {
-      return { letter: 'A', color: '#00ff00', description: 'EXCELLENT!' };
-    }
-    // B Rank: Under target time or 2+ shards
-    if (timeSeconds <= this.targetTime || keyShards >= 2) {
-      return { letter: 'B', color: '#00ffff', description: 'GREAT!' };
-    }
-    // C Rank: Completed with some effort
-    if (keyShards >= 1 || totalScore >= 500) {
-      return { letter: 'C', color: '#ffffff', description: 'GOOD' };
-    }
-    // D Rank: Just completed
-    return { letter: 'D', color: '#888888', description: 'CLEAR' };
-  }
-
-  /**
    * Show level completion screen with stats, rank, and menu
    */
   showCompletionScreen() {
-    const centerX = GAME_CONFIG.GAME_WIDTH / 2;
+    // Gather stats for completion screen
+    const stats = {
+      world: this.currentWorld,
+      level: this.currentLevel,
+      formattedTime: this.scoreManager.getFormattedTime(),
+      timeSeconds: this.scoreManager.getLevelTimeSeconds(),
+      targetTime: this.targetTime,
+      keyShards: this.scoreManager.getKeyShardCount(),
+      score: this.scoreManager.getScore(),
+      timeBonus: this.scoreManager.timeBonus,
+      styleBonus: this.scoreManager.styleBonus,
+      totalScore: this.scoreManager.getTotalScore()
+    };
 
-    // Calculate rank
-    const rank = this.calculateRank();
+    // Calculate rank using the manager
+    const rank = this.completionScreenManager.calculateRank(stats);
 
     // Save level completion
     const levelId = `${this.currentWorld}-${this.currentLevel}`;
     const improvements = saveManager.saveLevelCompletion(levelId, {
-      time: this.scoreManager.getLevelTimeSeconds(),
-      keyShards: this.scoreManager.getKeyShardCount(),
-      score: this.scoreManager.getTotalScore(),
+      time: stats.timeSeconds,
+      keyShards: stats.keyShards,
+      score: stats.totalScore,
       rank: rank.letter,
       coins: this.scoreManager.getCoinsCollected()
     });
@@ -1100,308 +894,32 @@ export default class GameScene extends Phaser.Scene {
     // Store improvements for display
     this.levelImprovements = improvements;
 
-    // Results menu state
-    this.resultsSelectedIndex = 0;
-    this.resultsMenuItems = ['NEXT LEVEL', 'RETRY', 'LEVEL SELECT', 'QUIT'];
-
-    // Create semi-transparent overlay
-    const overlay = this.add.graphics();
-    overlay.fillStyle(0x000000, 0.85);
-    overlay.fillRect(0, 0, GAME_CONFIG.GAME_WIDTH, GAME_CONFIG.GAME_HEIGHT);
-    overlay.setScrollFactor(0);
-    overlay.setDepth(2000);
-
-    // Title
-    const title = createCenteredText(
-      this,
-      centerX,
-      15 * SCALE,
-      'LEVEL COMPLETE!',
-      { ...TextStyles.subtitle, fontSize: `${16 * SCALE}px` }
-    );
-    title.setScrollFactor(0);
-    title.setDepth(2001);
-
-    // Level info
-    const levelInfo = createCenteredText(
-      this,
-      centerX,
-      30 * SCALE,
-      `World ${this.currentWorld}-${this.currentLevel}`,
-      TextStyles.hint
-    );
-    levelInfo.setScrollFactor(0);
-    levelInfo.setDepth(2001);
-
-    // Rank display (big letter)
-    const rankText = createCenteredText(
-      this,
-      centerX - 50 * SCALE,
-      60 * SCALE,
-      rank.letter,
-      { ...TextStyles.rank, fontSize: `${36 * SCALE}px`, color: rank.color }
-    );
-    rankText.setScrollFactor(0);
-    rankText.setDepth(2001);
-
-    // Rank description
-    const rankDesc = createCenteredText(
-      this,
-      centerX - 50 * SCALE,
-      85 * SCALE,
-      rank.description,
-      { ...TextStyles.hint, color: rank.color }
-    );
-    rankDesc.setScrollFactor(0);
-    rankDesc.setDepth(2001);
-
-    // Stats on the right side
-    const statsX = centerX + 30 * SCALE;
-    const statsStartY = 45 * SCALE;
-    const statsLineHeight = 10 * SCALE;
-
-    const statsData = [
-      { label: 'Time', value: this.scoreManager.getFormattedTime() },
-      { label: 'Shards', value: `${this.scoreManager.getKeyShardCount()}/3` },
-      { label: 'Score', value: `${this.scoreManager.getScore()}` },
-      { label: 'Time +', value: `${this.scoreManager.timeBonus}` },
-      { label: 'Style +', value: `${Math.floor(this.scoreManager.styleBonus)}` },
-    ];
-
-    const statsElements = [];
-    statsData.forEach((stat, index) => {
-      const y = statsStartY + index * statsLineHeight;
-
-      const label = createSmoothText(
-        this,
-        statsX - 30 * SCALE,
-        y,
-        stat.label,
-        { ...TextStyles.hint, fontSize: `${8 * SCALE}px`, align: 'right' }
-      );
-      label.setOrigin(1, 0);
-      label.setScrollFactor(0);
-      label.setDepth(2001);
-      statsElements.push(label);
-
-      const value = createSmoothText(
-        this,
-        statsX - 25 * SCALE,
-        y,
-        stat.value,
-        { ...TextStyles.hint, fontSize: `${8 * SCALE}px`, color: '#00ffff' }
-      );
-      value.setScrollFactor(0);
-      value.setDepth(2001);
-      statsElements.push(value);
-    });
-
-    // Total score
-    const totalY = statsStartY + statsData.length * statsLineHeight + 5 * SCALE;
-    const totalLabel = createSmoothText(
-      this,
-      statsX - 30 * SCALE,
-      totalY,
-      'TOTAL',
-      { ...TextStyles.hint, fontSize: `${8 * SCALE}px`, color: '#ffffff', align: 'right' }
-    );
-    totalLabel.setOrigin(1, 0);
-    totalLabel.setScrollFactor(0);
-    totalLabel.setDepth(2001);
-    statsElements.push(totalLabel);
-
-    const totalValue = createSmoothText(
-      this,
-      statsX - 25 * SCALE,
-      totalY,
-      `${this.scoreManager.getTotalScore()}`,
-      { ...TextStyles.hint, fontSize: `${8 * SCALE}px`, color: '#ffff00' }
-    );
-    totalValue.setScrollFactor(0);
-    totalValue.setDepth(2001);
-    statsElements.push(totalValue);
-
-    // Menu options
-    const menuStartY = 115 * SCALE;
-    const menuSpacing = 12 * SCALE;
-    const menuTexts = [];
-
-    this.resultsMenuItems.forEach((item, index) => {
-      const isSelected = index === this.resultsSelectedIndex;
-      const style = isSelected ?
-        { ...TextStyles.menuItemSelected, fontSize: `${10 * SCALE}px` } :
-        { ...TextStyles.menuItem, fontSize: `${10 * SCALE}px` };
-
-      const text = createCenteredText(
-        this,
-        centerX,
-        menuStartY + index * menuSpacing,
-        item,
-        style
-      );
-      text.setScrollFactor(0);
-      text.setDepth(2001);
-      menuTexts.push(text);
-    });
-
-    // Selection arrow
-    const arrow = createCenteredText(
-      this,
-      centerX - 55 * SCALE,
-      menuStartY,
-      '>',
-      { ...TextStyles.menuItemSelected, fontSize: `${10 * SCALE}px` }
-    );
-    arrow.setScrollFactor(0);
-    arrow.setDepth(2001);
-
-    // Pulse the arrow
-    this.tweens.add({
-      targets: arrow,
-      alpha: 0.3,
-      duration: 500,
-      yoyo: true,
-      repeat: -1
-    });
-
-    // Controls hint
-    const hint = createCenteredText(
-      this,
-      centerX,
-      GAME_CONFIG.GAME_HEIGHT - 10 * SCALE,
-      'R: Quick Retry',
-      { ...TextStyles.hint, fontSize: `${7 * SCALE}px` }
-    );
-    hint.setScrollFactor(0);
-    hint.setDepth(2001);
-
-    // Store overlay elements for cleanup
-    this.completionOverlay = {
-      overlay,
-      title,
-      levelInfo,
-      rankText,
-      rankDesc,
-      statsElements,
-      menuTexts,
-      arrow,
-      hint
-    };
-
-    // Setup results menu navigation
-    this.setupResultsMenuInput();
+    // Show completion screen via manager
+    this.completionScreenManager.show(stats);
   }
 
   /**
-   * Setup results menu navigation
+   * Handle completion menu action events
+   * @param {string} action - The selected action
    */
-  setupResultsMenuInput() {
-    // Navigation
-    this.resultsNavUp = () => {
-      if (!this.levelComplete) return;
-      this.resultsSelectedIndex = (this.resultsSelectedIndex - 1 + this.resultsMenuItems.length) % this.resultsMenuItems.length;
-      this.updateResultsMenuSelection();
-    };
+  handleCompletionMenuAction(action) {
+    this.completionScreenManager.hide();
 
-    this.resultsNavDown = () => {
-      if (!this.levelComplete) return;
-      this.resultsSelectedIndex = (this.resultsSelectedIndex + 1) % this.resultsMenuItems.length;
-      this.updateResultsMenuSelection();
-    };
-
-    this.resultsConfirm = () => {
-      if (!this.levelComplete) return;
-      this.confirmResultsSelection();
-    };
-
-    this.resultsQuickRetry = () => {
-      if (!this.levelComplete) return;
-      this.cleanupCompletionOverlay();
-      this.instantRestart();
-    };
-
-    this.input.keyboard.on('keydown-UP', this.resultsNavUp);
-    this.input.keyboard.on('keydown-DOWN', this.resultsNavDown);
-    this.input.keyboard.on('keydown-W', this.resultsNavUp);
-    this.input.keyboard.on('keydown-S', this.resultsNavDown);
-    this.input.keyboard.on('keydown-ENTER', this.resultsConfirm);
-    this.input.keyboard.on('keydown-SPACE', this.resultsConfirm);
-    this.input.keyboard.on('keydown-R', this.resultsQuickRetry);
-  }
-
-  /**
-   * Update results menu selection visuals
-   */
-  updateResultsMenuSelection() {
-    if (!this.completionOverlay) return;
-
-    const menuStartY = 115 * SCALE;
-    const menuSpacing = 12 * SCALE;
-
-    // Update menu item styles
-    this.completionOverlay.menuTexts.forEach((text, index) => {
-      const isSelected = index === this.resultsSelectedIndex;
-      text.setStyle(isSelected ?
-        { ...TextStyles.menuItemSelected, fontSize: `${10 * SCALE}px` } :
-        { ...TextStyles.menuItem, fontSize: `${10 * SCALE}px` }
-      );
-    });
-
-    // Move arrow
-    this.completionOverlay.arrow.y = menuStartY + this.resultsSelectedIndex * menuSpacing;
-  }
-
-  /**
-   * Confirm results menu selection
-   */
-  confirmResultsSelection() {
-    const selected = this.resultsMenuItems[this.resultsSelectedIndex];
-
-    this.cleanupCompletionOverlay();
-
-    switch (selected) {
-      case 'NEXT LEVEL':
+    switch (action) {
+      case 'next_level':
         this.advanceToNextLevel();
         break;
-      case 'RETRY':
+      case 'retry':
+      case 'quick_retry':
         this.instantRestart();
         break;
-      case 'LEVEL SELECT':
+      case 'level_select':
         this.scene.start('LevelSelectScene');
         break;
-      case 'QUIT':
+      case 'quit':
         this.scene.start('TitleScene');
         break;
     }
-  }
-
-  /**
-   * Clean up completion overlay
-   */
-  cleanupCompletionOverlay() {
-    // Remove input listeners
-    this.input.keyboard.off('keydown-UP', this.resultsNavUp);
-    this.input.keyboard.off('keydown-DOWN', this.resultsNavDown);
-    this.input.keyboard.off('keydown-W', this.resultsNavUp);
-    this.input.keyboard.off('keydown-S', this.resultsNavDown);
-    this.input.keyboard.off('keydown-ENTER', this.resultsConfirm);
-    this.input.keyboard.off('keydown-SPACE', this.resultsConfirm);
-    this.input.keyboard.off('keydown-R', this.resultsQuickRetry);
-
-    if (!this.completionOverlay) return;
-
-    // Destroy all overlay elements
-    this.completionOverlay.overlay.destroy();
-    this.completionOverlay.title.destroy();
-    this.completionOverlay.levelInfo.destroy();
-    this.completionOverlay.rankText.destroy();
-    this.completionOverlay.rankDesc.destroy();
-    this.completionOverlay.statsElements.forEach(el => el.destroy());
-    this.completionOverlay.menuTexts.forEach(text => text.destroy());
-    this.completionOverlay.arrow.destroy();
-    this.completionOverlay.hint.destroy();
-
-    this.completionOverlay = null;
   }
 
   /**
