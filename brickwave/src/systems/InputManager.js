@@ -226,36 +226,42 @@ class InputManager {
     const leftX = padding + buttonSize / 2;
     const dpadCenterX = leftX + buttonSize + padding;
 
-    // Left arrow button
+    // Left arrow button (sticky for continuous movement)
     this.leftButton = this.createTouchButton(
       leftX,
       bottomY,
       buttonSize,
       '←',
       () => { this.touchState.left = true; },
-      () => { this.touchState.left = false; }
+      () => { this.touchState.left = false; },
+      0x4444ff,
+      true // sticky
     );
     this.touchControls.add(this.leftButton);
 
-    // Right arrow button
+    // Right arrow button (sticky for continuous movement)
     this.rightButton = this.createTouchButton(
       leftX + buttonSize + padding * 2 + buttonSize,
       bottomY,
       buttonSize,
       '→',
       () => { this.touchState.right = true; },
-      () => { this.touchState.right = false; }
+      () => { this.touchState.right = false; },
+      0x4444ff,
+      true // sticky
     );
     this.touchControls.add(this.rightButton);
 
-    // Down arrow button (between left and right)
+    // Down arrow button (sticky for continuous movement)
     this.downButton = this.createTouchButton(
       leftX + buttonSize + padding,
       bottomY,
       buttonSize * 0.8,
       '↓',
       () => { this.touchState.down = true; },
-      () => { this.touchState.down = false; }
+      () => { this.touchState.down = false; },
+      0x4444ff,
+      true // sticky
     );
     this.touchControls.add(this.downButton);
 
@@ -294,8 +300,9 @@ class InputManager {
 
   /**
    * Create a touch button
+   * @param {boolean} sticky - If true, button only releases on pointerup (not pointerout)
    */
-  createTouchButton(x, y, size, label, onDown, onUp, color = 0x4444ff) {
+  createTouchButton(x, y, size, label, onDown, onUp, color = 0x4444ff, sticky = false) {
     const container = this.scene.add.container(x, y);
 
     // Button background
@@ -329,11 +336,20 @@ class InputManager {
       onUp();
     });
 
-    bg.on('pointerout', () => {
-      bg.setFillStyle(color, 0.5);
-      bg.setScale(1.0);
-      onUp();
-    });
+    // Only release on pointerout if not sticky (movement buttons should be sticky)
+    if (!sticky) {
+      bg.on('pointerout', () => {
+        bg.setFillStyle(color, 0.5);
+        bg.setScale(1.0);
+        onUp();
+      });
+    } else {
+      // For sticky buttons, just reset visuals but don't release the button
+      bg.on('pointerout', () => {
+        bg.setFillStyle(color, 0.5);
+        bg.setScale(1.0);
+      });
+    }
 
     return container;
   }
