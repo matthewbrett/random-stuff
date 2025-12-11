@@ -30,8 +30,9 @@ export default class Spider extends Enemy {
     this.edgeCheckEnabled = true;
 
     // Jump AI properties
-    this.chaseRange = 100 * SCALE;        // Horizontal range to detect player
-    this.verticalDetectRange = 50 * SCALE; // How far above player can be detected
+    // Detection ranges (bumped up so spiders react to higher platforms)
+    this.chaseRange = 120 * SCALE;         // Horizontal range to detect player
+    this.verticalDetectRange = 120 * SCALE; // How far above player can be detected
     this.jumpCheckInterval = 500;          // ms between jump checks
     this.jumpCooldown = 1000;              // ms cooldown after jumping
     this.lastJumpCheck = 0;
@@ -169,8 +170,21 @@ export default class Spider extends Enemy {
     return (
       horizontalDist < this.chaseRange &&           // Player nearby horizontally
       verticalDist > 10 * SCALE &&                  // Player at least 1 tile above
-      verticalDist < this.verticalDetectRange &&    // Not too far above
-      player.isGrounded                             // Only jump to grounded player
+      verticalDist < this.verticalDetectRange       // Not too far above
+    );
+  }
+
+  /**
+   * Whether we should actively chase the player (same-range check as jump but more forgiving vertically)
+   */
+  shouldChasePlayer(player) {
+    const playerSprite = player.sprite;
+    const horizontalDist = Math.abs(playerSprite.x - this.sprite.x);
+    const verticalDist = Math.abs(playerSprite.y - this.sprite.y);
+
+    return (
+      horizontalDist < this.chaseRange &&
+      verticalDist < this.verticalDetectRange * 1.5 // Let spiders chase even when player slightly above/below
     );
   }
 
@@ -257,9 +271,23 @@ export default class Spider extends Enemy {
    * Update horizontal movement (patrol or chase)
    */
   updateMovement(_time, _delta) {
+    const player = this.scene.player;
+    let chasing = false;
+
+    // Face and chase the player when nearby
+    if (player && player.sprite) {
+      if (this.shouldChasePlayer(player)) {
+        const direction = player.sprite.x > this.sprite.x ? 1 : -1;
+        this.facing = direction;
+        this.sprite.flipX = this.facing < 0;
+        chasing = true;
+      }
+    }
+
     // Only move horizontally when grounded (let physics handle air movement)
     if (this.isGrounded()) {
-      this.sprite.body.setVelocityX(this.config.speed * this.facing);
+      const speed = chasing ? this.config.speed * 1.1 : this.config.speed;
+      this.sprite.body.setVelocityX(speed * this.facing);
     }
   }
 
