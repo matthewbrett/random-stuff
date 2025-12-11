@@ -7,4 +7,5 @@ const game = new Phaser.Game(config);
 // Make game instance available globally for debugging
 window.game = game;
 
+// eslint-disable-next-line no-console
 console.log('🎮 BRICKWAVE starting...');

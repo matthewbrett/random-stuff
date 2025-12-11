@@ -36,6 +36,7 @@ export default class PhaseManager {
     // Event callbacks
     this.onPhaseChange = new Map(); // Map of group ID to callbacks
 
+    // eslint-disable-next-line no-console
     console.log('⏱️  PhaseManager: Initialized');
   }
 
@@ -76,6 +77,7 @@ export default class PhaseManager {
 
     this.groups.set(groupId, group);
 
+    // eslint-disable-next-line no-console
     console.log(`⏱️  PhaseManager: Created group ${groupId} (${solidDuration}ms solid / ${ghostDuration}ms ghost, offset: ${offset}ms)`);
 
     return group;
@@ -152,6 +154,7 @@ export default class PhaseManager {
       // Trigger callbacks
       this.triggerPhaseChange(group.id, newPhase, oldPhase);
 
+      // eslint-disable-next-line no-console
       console.log(`⏱️  PhaseManager: Group ${group.id} changed from ${oldPhase} to ${newPhase}`);
     }
   }

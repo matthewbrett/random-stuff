@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
 import PhaseBrick from '../entities/PhaseBrick.js';
 
@@ -27,6 +26,7 @@ export default class LevelLoader {
    * @param {object} levelData - The Tiled JSON data
    */
   loadLevel(levelData) {
+    // eslint-disable-next-line no-console
     console.log('🗺️  LevelLoader: Loading level...', levelData.name || 'Untitled');
 
     this.levelData = levelData;
@@ -60,6 +60,7 @@ export default class LevelLoader {
     this.scene.physics.world.setBounds(0, 0, this.levelWidth, this.levelHeight);
     this.scene.cameras.main.setBounds(0, 0, this.levelWidth, this.levelHeight);
 
+    // eslint-disable-next-line no-console
     console.log('✅ LevelLoader: Level loaded successfully');
     return {
       width: this.levelWidth,
@@ -77,6 +78,7 @@ export default class LevelLoader {
   loadTileLayer(layer) {
     if (!layer.visible) return;
 
+    // eslint-disable-next-line no-console
     console.log(`  📐 Loading tile layer: ${layer.name}`);
 
     const layerGroup = this.scene.add.group();
@@ -158,6 +160,7 @@ export default class LevelLoader {
   loadObjectLayer(layer) {
     if (!layer.visible) return;
 
+    // eslint-disable-next-line no-console
     console.log(`  🎯 Loading object layer: ${layer.name}`);
 
     // Store objects for later processing

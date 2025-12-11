@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
-import { TextStyles, createCenteredText, createSmoothText } from '../utils/TextStyles.js';
+import { TextStyles, createCenteredText } from '../utils/TextStyles.js';
 import audioManager from '../systems/AudioManager.js';
 
 /**
@@ -30,6 +30,7 @@ export default class GameOverScene extends Phaser.Scene {
   }
 
   create() {
+    // eslint-disable-next-line no-console
     console.log('💀 GameOverScene: Creating game over screen...');
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
@@ -288,7 +289,7 @@ export default class GameOverScene extends Phaser.Scene {
     });
   }
 
-  update(time, delta) {
+  update(_time, _delta) {
     // No continuous updates needed for this scene
   }
 }

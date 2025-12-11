@@ -14,6 +14,7 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
+    // eslint-disable-next-line no-console
     console.log('🎮 BootScene: Preloading assets...');
 
     // Preload audio assets
@@ -21,6 +22,7 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create() {
+    // eslint-disable-next-line no-console
     console.log('🎮 BootScene: Initializing...');
 
     // Initialize AudioManager
@@ -32,6 +34,7 @@ export default class BootScene extends Phaser.Scene {
     // Check for debug level parameter (?level=2-2)
     const debugLevel = saveManager.checkDebugLevelParam();
     if (debugLevel) {
+      // eslint-disable-next-line no-console
       console.log('🎮 BootScene: Debug level skip to', debugLevel);
       this.time.delayedCall(100, () => {
         this.scene.start('GameScene', debugLevel);
@@ -44,10 +47,10 @@ export default class BootScene extends Phaser.Scene {
     const centerY = GAME_CONFIG.GAME_HEIGHT / 2;
 
     // Title text
-    const titleText = createCenteredText(this, centerX, centerY - 20, 'BRICKWAVE', TextStyles.title);
+    createCenteredText(this, centerX, centerY - 20, 'BRICKWAVE', TextStyles.title);
 
     // Subtitle
-    const subtitleText = createCenteredText(this, centerX, centerY + 10, 'Phase 1: Setup Complete', TextStyles.subtitle);
+    createCenteredText(this, centerX, centerY + 10, 'Phase 1: Setup Complete', TextStyles.subtitle);
 
     // Version info
     const versionText = createCenteredText(this, centerX, centerY + 30, 'Press SPACE to continue', TextStyles.hint);
@@ -82,14 +85,14 @@ export default class BootScene extends Phaser.Scene {
       `Physics: Arcade (${GAME_CONFIG.GRAVITY} gravity)`,
     ];
 
-    const debugText = createSmoothText(this, 10, 10, debugInfo.join('\n'), {
+    createSmoothText(this, 10, 10, debugInfo.join('\n'), {
       ...TextStyles.debug,
       color: '#666666',
       backgroundColor: 'transparent',
     });
   }
 
-  update(time, delta) {
+  update(_time, _delta) {
     // Update loop - currently unused
   }
 }

@@ -8,7 +8,6 @@
  * - Customizable duration and colors
  */
 
-import Phaser from 'phaser';
 import { GAME_CONFIG, SCALE } from '../config.js';
 
 class TransitionManager {

@@ -1,5 +1,5 @@
 import { GAME_CONFIG, SCALE } from '../config.js';
-import { TextStyles, createSmoothText, createCenteredText } from '../utils/TextStyles.js';
+import { TextStyles, createCenteredText } from '../utils/TextStyles.js';
 import MenuController from './MenuController.js';
 
 /**

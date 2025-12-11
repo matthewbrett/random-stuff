@@ -79,6 +79,7 @@ class InputManager {
     // Enable touch controls if either condition is true
     this.touchControlsVisible = this.isTouchDevice || isMobileSize;
 
+    // eslint-disable-next-line no-console
     console.log(`🎮 InputManager: Touch device: ${this.isTouchDevice}, Mobile size: ${isMobileSize}`);
   }
 
@@ -126,7 +127,7 @@ class InputManager {
    * @param {string[]} keys - Array of key codes
    */
   remapControl(action, keys) {
-    if (this.bindings.hasOwnProperty(action)) {
+    if (Object.prototype.hasOwnProperty.call(this.bindings, action)) {
       this.bindings[action] = keys;
       this.saveBindings();
       if (this.scene) {
@@ -224,7 +225,6 @@ class InputManager {
 
     // Left side controls (movement)
     const leftX = padding + buttonSize / 2;
-    const dpadCenterX = leftX + buttonSize + padding;
 
     // Left arrow button (sticky for continuous movement)
     this.leftButton = this.createTouchButton(

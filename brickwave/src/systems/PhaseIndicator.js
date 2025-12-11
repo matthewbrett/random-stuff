@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { PhaseState } from './PhaseManager.js';
 import { TextStyles, createSmoothText } from '../utils/TextStyles.js';
 import { SCALE } from '../config.js';
@@ -96,13 +95,14 @@ export default class PhaseIndicator {
       this.onPhaseChange(newPhase, oldPhase);
     });
 
+    // eslint-disable-next-line no-console
     console.log(`📊 PhaseIndicator: Created at (${x}, ${y}) for group ${groupId}`);
   }
 
   /**
    * Update the indicator
    */
-  update(time, delta) {
+  update(time, _delta) {
     const currentPhase = this.phaseManager.getCurrentPhase(this.groupId);
     const progress = this.phaseManager.getPhaseProgress(this.groupId);
 
@@ -195,7 +195,7 @@ export default class PhaseIndicator {
   /**
    * Handle phase change event
    */
-  onPhaseChange(newPhase, oldPhase) {
+  onPhaseChange(_newPhase, _oldPhase) {
     // Flash effect on phase change
     this.scene.tweens.add({
       targets: this.pulseIndicator,

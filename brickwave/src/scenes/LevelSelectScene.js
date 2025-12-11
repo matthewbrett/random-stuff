@@ -51,6 +51,7 @@ export default class LevelSelectScene extends Phaser.Scene {
   }
 
   create() {
+    // eslint-disable-next-line no-console
     console.log('🎮 LevelSelectScene: Creating level select...');
 
     // Initialize audio manager with this scene
@@ -89,7 +90,7 @@ export default class LevelSelectScene extends Phaser.Scene {
     saveManager.init();
 
     // Load progress for each level
-    this.levels.forEach((level, index) => {
+    this.levels.forEach((level, _index) => {
       const levelProgress = saveManager.getLevelProgress(level.id);
 
       if (levelProgress) {
@@ -108,6 +109,7 @@ export default class LevelSelectScene extends Phaser.Scene {
     const completedCount = saveManager.getCompletedLevelCount();
     const totalShards = saveManager.getTotalKeyShards();
     const shardCapacity = this.levels.filter(l => l.id !== 'intro').length * 3;
+    // eslint-disable-next-line no-console
     console.log(`📊 Progress: ${completedCount}/${this.levels.length} levels, ${totalShards}/${shardCapacity} key shards`);
   }
 
@@ -491,7 +493,7 @@ export default class LevelSelectScene extends Phaser.Scene {
     this.scene.start('TitleScene');
   }
 
-  update(time, delta) {
+  update(_time, _delta) {
     // Animation updates if needed
   }
 }

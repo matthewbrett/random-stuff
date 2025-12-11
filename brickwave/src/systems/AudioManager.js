@@ -61,7 +61,7 @@ class AudioManager {
     // Get or create WebAudio context for procedural audio
     try {
       this.audioContext = scene.sound.context;
-    } catch (e) {
+    } catch {
       console.warn('WebAudio context not available');
     }
 
@@ -80,8 +80,8 @@ class AudioManager {
         this.musicVolume = settings.musicVolume ?? 80;
         this.sfxVolume = settings.sfxVolume ?? 100;
       }
-    } catch (e) {
-      console.warn('Failed to load audio settings:', e);
+    } catch (_e) {
+      console.warn('Failed to load audio settings:', _e);
     }
   }
 
@@ -140,7 +140,7 @@ class AudioManager {
    * Preload all audio assets
    * @param {Phaser.Scene} scene - Scene to preload in
    */
-  preload(scene) {
+  preload(_scene) {
     // Check if audio files exist and load them
     // For now, we'll use procedural audio as fallback
 
@@ -178,6 +178,7 @@ class AudioManager {
       this.currentMusicKey = key;
     } else {
       // Use procedural music as fallback
+      // eslint-disable-next-line no-console
       console.log(`Music ${key} not found, using procedural fallback`);
       // For MVP, we'll just log this - real music can be added later
     }
@@ -368,7 +369,7 @@ class AudioManager {
         });
         break;
 
-      case AUDIO_KEYS.SFX_LEVEL_COMPLETE:
+      case AUDIO_KEYS.SFX_LEVEL_COMPLETE: {
         // Victory fanfare
         const notes = [523, 659, 784, 1047]; // C5, E5, G5, C6
         notes.forEach((freq, i) => {
@@ -380,6 +381,7 @@ class AudioManager {
           });
         });
         break;
+      }
 
       default:
         // Generic beep fallback
@@ -426,7 +428,7 @@ class AudioManager {
 
       oscillator.start(startTime);
       oscillator.stop(startTime + duration + 0.01);
-    } catch (e) {
+    } catch {
       // Audio context might be suspended or unavailable
     }
   }

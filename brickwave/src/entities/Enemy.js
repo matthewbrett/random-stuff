@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { SCALE } from '../config.js';
 
 /**
@@ -97,7 +96,7 @@ export default class Enemy {
   /**
    * Update movement - override in subclasses
    */
-  updateMovement(time, delta) {
+  updateMovement(_time, _delta) {
     // Default: move in facing direction
     this.sprite.body.setVelocityX(this.config.speed * this.facing);
   }
@@ -143,6 +142,7 @@ export default class Enemy {
     // Bounce the player up after stomp (scaled)
     player.sprite.body.setVelocityY(-150 * SCALE);
 
+    // eslint-disable-next-line no-console
     console.log(`👟 Enemy stomped! +${this.config.scoreValue}`);
   }
 
@@ -150,9 +150,10 @@ export default class Enemy {
    * Handle being dashed by player
    * @param {Player} player - The player who dashed
    */
-  onDash(player) {
+  onDash(_player) {
     this.takeHit();
 
+    // eslint-disable-next-line no-console
     console.log(`💨 Enemy dashed! +${this.config.scoreValue}`);
   }
 
@@ -189,8 +190,9 @@ export default class Enemy {
    * @param {Player} player - The player object
    * @returns {boolean} True if the player should take damage
    */
-  onPlayerCollision(player) {
+  onPlayerCollision(_player) {
     // TODO: Implement player damage/death in later phase
+    // eslint-disable-next-line no-console
     console.log('💥 Player hit by enemy!');
     return true;
   }
@@ -296,7 +298,7 @@ export default class Enemy {
   /**
    * Optional hook when the player overlaps the enemy (before harm logic)
    */
-  onPlayerOverlap(player) {
+  onPlayerOverlap(_player) {
     // Default: no-op
   }
 

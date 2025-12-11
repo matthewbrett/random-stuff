@@ -43,6 +43,7 @@ export default class SettingsScene extends Phaser.Scene {
   }
 
   create() {
+    // eslint-disable-next-line no-console
     console.log('🎮 SettingsScene: Creating settings menu...');
 
     const centerX = GAME_CONFIG.GAME_WIDTH / 2;
@@ -87,7 +88,7 @@ export default class SettingsScene extends Phaser.Scene {
     try {
       const saved = localStorage.getItem('brickwave_settings');
       this.settings = saved ? { ...defaults, ...JSON.parse(saved) } : defaults;
-    } catch (e) {
+    } catch {
       this.settings = defaults;
     }
   }
@@ -156,7 +157,7 @@ export default class SettingsScene extends Phaser.Scene {
     this.separatorLines = [];
     let selectableIndex = 0;
 
-    this.settingsDef.forEach((setting, defIndex) => {
+    this.settingsDef.forEach((setting, _defIndex) => {
       if (setting.type === 'separator') {
         // Draw separator line
         const line = this.add.graphics();
@@ -201,15 +202,17 @@ export default class SettingsScene extends Phaser.Scene {
     let valueDisplay = '';
 
     switch (setting.type) {
-      case 'slider':
+      case 'slider': {
         const value = this.settings[setting.key];
         valueDisplay = this.createSliderDisplay(value, setting.min, setting.max);
         break;
+      }
 
-      case 'toggle':
+      case 'toggle': {
         const optionIndex = this.settings[setting.key] || 0;
         valueDisplay = setting.options[optionIndex];
         break;
+      }
 
       case 'action':
         valueDisplay = '>';
@@ -354,15 +357,16 @@ export default class SettingsScene extends Phaser.Scene {
     const setting = item.setting;
 
     switch (setting.type) {
-      case 'slider':
+      case 'slider': {
         let newValue = this.settings[setting.key] + direction * setting.step;
         newValue = Math.max(setting.min, Math.min(setting.max, newValue));
         this.settings[setting.key] = newValue;
         this.updateItemDisplay(item);
         this.saveSettings();
         break;
+      }
 
-      case 'toggle':
+      case 'toggle': {
         let optionIndex = this.settings[setting.key] || 0;
         optionIndex = (optionIndex + direction + setting.options.length) % setting.options.length;
         this.settings[setting.key] = optionIndex;
@@ -374,6 +378,7 @@ export default class SettingsScene extends Phaser.Scene {
           this.handleResolutionChange(optionIndex);
         }
         break;
+      }
 
       case 'action':
         // Toggle with enter/space, not arrows
@@ -715,14 +720,20 @@ export default class SettingsScene extends Phaser.Scene {
         fallback.setScrollFactor(0);
         fallback.setDepth(1001);
         this.exportCopiedText = fallback;
+        // eslint-disable-next-line no-console
         console.log('=== BRICKWAVE SAVE DATA ===');
+        // eslint-disable-next-line no-console
         console.log(saveData);
+        // eslint-disable-next-line no-console
         console.log('=== END SAVE DATA ===');
       });
-    } catch (e) {
+    } catch {
       // Fallback for browsers without clipboard API
+      // eslint-disable-next-line no-console
       console.log('=== BRICKWAVE SAVE DATA ===');
+      // eslint-disable-next-line no-console
       console.log(saveData);
+      // eslint-disable-next-line no-console
       console.log('=== END SAVE DATA ===');
     }
 
@@ -917,6 +928,7 @@ export default class SettingsScene extends Phaser.Scene {
       // Initialize SaveManager and clear progress
       saveManager.init();
       saveManager.clearProgress();
+      // eslint-disable-next-line no-console
       console.log('Progress reset!');
 
       // Show confirmation
@@ -946,18 +958,20 @@ export default class SettingsScene extends Phaser.Scene {
     let valueDisplay = '';
 
     switch (setting.type) {
-      case 'slider':
+      case 'slider': {
         valueDisplay = this.createSliderDisplay(
           this.settings[setting.key],
           setting.min,
           setting.max
         );
         break;
+      }
 
-      case 'toggle':
+      case 'toggle': {
         const optionIndex = this.settings[setting.key] || 0;
         valueDisplay = setting.options[optionIndex];
         break;
+      }
     }
 
     item.valueText.setText(valueDisplay);
@@ -993,7 +1007,7 @@ export default class SettingsScene extends Phaser.Scene {
     this.scene.start('TitleScene');
   }
 
-  update(time, delta) {
+  update(_time, _delta) {
     // Animation updates if needed
   }
 }
