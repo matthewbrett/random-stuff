@@ -81,6 +81,9 @@ export default class Player {
     // Crouch state
     this.isCrouching = false;
 
+    // Speed modifier (for web zones and other slowdown effects)
+    this.speedModifier = 1.0;
+
     // Health system
     this.maxHealth = 4;
     this.currentHealth = this.maxHealth;
@@ -523,8 +526,8 @@ export default class Player {
     const leftPressed = inputManager.isDown('left');
     const rightPressed = inputManager.isDown('right');
 
-    // Determine acceleration based on whether player is grounded
-    const accel = this.isGrounded ? this.acceleration : this.airAcceleration;
+    // Determine acceleration based on whether player is grounded, apply speed modifier
+    const accel = (this.isGrounded ? this.acceleration : this.airAcceleration) * this.speedModifier;
 
     if (leftPressed && !rightPressed) {
       // Move left
@@ -689,6 +692,22 @@ export default class Player {
 
   setPosition(x, y) {
     this.sprite.setPosition(x, y);
+  }
+
+  /**
+   * Set the speed modifier for slowdown effects (e.g., web zones)
+   * @param {number} modifier - Speed multiplier (clamped to 0.1-1.0)
+   */
+  setSpeedModifier(modifier) {
+    this.speedModifier = Math.max(0.1, Math.min(1.0, modifier));
+  }
+
+  /**
+   * Get the current speed modifier
+   * @returns {number} Current speed modifier
+   */
+  getSpeedModifier() {
+    return this.speedModifier;
   }
 
   // Health system methods

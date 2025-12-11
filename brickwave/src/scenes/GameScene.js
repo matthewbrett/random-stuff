@@ -11,6 +11,7 @@ import ScoreManager from '../systems/ScoreManager.js';
 import Powerup from '../entities/Powerup.js';
 import GameHUD from '../systems/GameHUD.js';
 import EnemyManager from '../systems/EnemyManager.js';
+import WebZoneManager from '../systems/WebZoneManager.js';
 import saveManager from '../systems/SaveManager.js';
 import audioManager from '../systems/AudioManager.js';
 import particleEffects from '../systems/ParticleEffects.js';
@@ -176,6 +177,10 @@ export default class GameScene extends Phaser.Scene {
     // Create enemy manager and spawn enemies
     this.enemyManager = new EnemyManager(this);
     this.enemyManager.spawnFromLevel(levelData);
+
+    // Create web zone manager and spawn zones
+    this.webZoneManager = new WebZoneManager(this);
+    this.webZoneManager.spawnFromLevel(levelData);
 
     // Level completion state
     this.levelComplete = false;
@@ -369,6 +374,11 @@ export default class GameScene extends Phaser.Scene {
     // Remove UI event listeners
     this.events.off('pauseMenuAction', this.handlePauseMenuAction, this);
     this.events.off('completionMenuAction', this.handleCompletionMenuAction, this);
+
+    // Clean up web zone manager
+    if (this.webZoneManager) {
+      this.webZoneManager.destroy();
+    }
 
     // Clean up input manager
     inputManager.destroy();
@@ -614,6 +624,11 @@ export default class GameScene extends Phaser.Scene {
     // Update enemies
     if (this.enemyManager) {
       this.enemyManager.update(time, delta);
+    }
+
+    // Update web zones (check player overlap and apply slowdown)
+    if (this.webZoneManager && this.player) {
+      this.webZoneManager.update(this.player);
     }
 
     // Update player
