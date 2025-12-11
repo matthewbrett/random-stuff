@@ -53,6 +53,9 @@ export default class GameScene extends Phaser.Scene {
 
     // Also load test level for backwards compatibility
     this.load.json('testLevel1', 'assets/levels/test-level-1.json');
+
+    // Test levels for development (accessible via ?test=spider)
+    this.load.json('test-spider', 'assets/levels/test-spider.json');
   }
 
   init(data) {
