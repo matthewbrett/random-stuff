@@ -2,6 +2,7 @@ import Skitter from '../entities/Skitter.js';
 import BlinkBat from '../entities/BlinkBat.js';
 import SentryOrb from '../entities/SentryOrb.js';
 import BrickMimic from '../entities/BrickMimic.js';
+import Spider from '../entities/Spider.js';
 import saveManager from './SaveManager.js';
 import { SCALE } from '../config.js';
 
@@ -36,6 +37,7 @@ export default class EnemyManager {
       'brickmimic': BrickMimic,
       'brick_mimic': BrickMimic,
       'mimic': BrickMimic,
+      'spider': Spider,
     };
 
     // eslint-disable-next-line no-console
@@ -147,8 +149,8 @@ export default class EnemyManager {
       this.scene.physics.add.collider(enemy.sprite, this.scene.platforms);
     }
 
-    // Add collision with one-way platforms (for ground enemies)
-    if (this.scene.oneWayPlatforms && enemy instanceof Skitter) {
+    // Add collision with one-way platforms (for ground enemies like Skitter and Spider)
+    if (this.scene.oneWayPlatforms && (enemy instanceof Skitter || enemy instanceof Spider)) {
       this.scene.physics.add.collider(enemy.sprite, this.scene.oneWayPlatforms);
     }
   }

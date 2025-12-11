@@ -1,7 +1,7 @@
 # Spider Enemy & Web Zones Implementation Plan
 
 **Created:** December 2025
-**Status:** Planning Complete - Ready for Implementation
+**Status:** Phases 1-4 Complete - Ready for Polish
 **Feature:** New spider enemy with smart jumping AI and web zone slowdown mechanic
 
 ---
@@ -41,47 +41,48 @@ Add a spider enemy that chases the player with smart jumping abilities, plus web
 
 ## Implementation Phases
 
-### Phase 1: Player Slowdown Foundation
+### Phase 1: Player Slowdown Foundation ✅ COMPLETE
 **Files**: `src/entities/Player.js`
 **Effort**: ~30 minutes
 
 **Tasks**:
-1. Add `speedModifier` property to constructor (default 1.0)
-2. Modify `handleHorizontalMovement()` at line 527:
+1. ✅ Add `speedModifier` property to constructor (default 1.0) - Line 85
+2. ✅ Modify `handleHorizontalMovement()` at line 530:
    ```javascript
    const accel = (this.isGrounded ? this.acceleration : this.airAcceleration) * this.speedModifier;
    ```
-3. Add public method `setSpeedModifier(modifier)` with clamping (0.1-1.0)
+3. ✅ Add public methods `setSpeedModifier(modifier)` and `getSpeedModifier()` - Lines 701-711
 
 **Testing**: Manually set modifier in GameScene to verify slowdown works
 
-### Phase 2: Web Zone System
+### Phase 2: Web Zone System ✅ COMPLETE
 **Effort**: ~2 hours
 
 **New Files**:
-- `src/entities/WebZone.js` (~80 lines)
-- `src/systems/WebZoneManager.js` (~120 lines)
+- ✅ `src/entities/WebZone.js` (~150 lines)
+- ✅ `src/systems/WebZoneManager.js` (~190 lines)
 
 **WebZone Class**:
-- Rectangle bounds (Phaser.Geom.Rectangle)
-- Slowdown factor from config
-- Procedural graphics: semi-transparent overlay + diagonal web lines
-- `checkPlayerInside()` method using rectangle intersection
+- ✅ Rectangle bounds (Phaser.Geom.Rectangle)
+- ✅ Slowdown factor from config
+- ✅ Procedural graphics: semi-transparent overlay + diagonal web lines
+- ✅ `checkPlayerInside()` method using rectangle intersection
 
 **WebZoneManager Class**:
-- `spawnFromLevel(levelData)` - parse object layers for web_zone objects
-- `update(player)` - check all zones, apply strongest slowdown if in any zone
-- Remove slowdown when player exits all zones
+- ✅ `spawnFromLevel(levelData)` - parse object layers for web_zone objects
+- ✅ `update(player)` - check all zones, apply strongest slowdown if in any zone
+- ✅ Remove slowdown when player exits all zones
 
 **GameScene Integration** (`src/scenes/GameScene.js`):
-- Import WebZoneManager (line ~13)
-- Create instance after PhaseManager (~line 98)
-- Call `spawnFromLevel()` after level loads (~line 120)
-- Call `update(player)` in main update loop (~line 180)
+- ✅ Import WebZoneManager (line 14)
+- ✅ Create instance (line 182)
+- ✅ Call `spawnFromLevel()` after level loads (line 183)
+- ✅ Call `update(player)` in main update loop (lines 630-632)
+- ✅ Destroy on shutdown (lines 379-381)
 
 **Testing**: Add hardcoded web zone, verify slowdown triggers on overlap
 
-### Phase 3: Level Data Integration
+### Phase 3: Level Data Integration ✅ COMPLETE
 **Effort**: ~30 minutes
 
 **Level JSON Format** (add to Entities object layer):
@@ -94,49 +95,51 @@ Add a spider enemy that chases the player with smart jumping abilities, plus web
   "width": 48,
   "height": 24,
   "properties": [
-    {"name": "slowdown", "value": 0.4}
+    {"name": "slowdown", "type": "float", "value": 0.4}
   ]
 }
 ```
 
 **Tasks**:
-- Add web zone to test level (level-1-1.json or create test level)
-- Verify loading and functionality
-- Test edge cases (multiple zones, overlapping zones)
+- ✅ Created test level: `assets/levels/test-spider.json`
+- ✅ Added multiple web zones with different slowdown values (0.5, 0.4, 0.3)
+- ✅ Test level accessible via `?test=spider` query parameter
 
-**Testing**: Add web zone to test level, verify it loads and functions correctly
+**Testing**: Test level includes web zones that load and function correctly
 
-### Phase 4: Spider Enemy
+### Phase 4: Spider Enemy ✅ COMPLETE
 **Effort**: ~3 hours
 
-**New File**: `src/entities/Spider.js` (~200 lines)
+**New File**: ✅ `src/entities/Spider.js` (~280 lines)
 
 **Class Structure**:
-- Extends `Enemy` base class
-- Constructor: size 8x8, speed 30 * SCALE, score 75 points
-- Properties: chaseRange, jumpCheckInterval, jumpCooldown, verticalDetectRange
+- ✅ Extends `Enemy` base class
+- ✅ Constructor: size 8x8, speed 30 * SCALE, score 75 points
+- ✅ Properties: chaseRange, jumpCheckInterval, jumpCooldown, verticalDetectRange
 
 **AI Logic**:
-- `update()`: Main state machine
+- ✅ `update()`: Main state machine
   - Check if player in horizontal range
   - Check if player above and grounded
   - Execute jump if conditions met and off cooldown
   - Otherwise patrol like Skitter
-- `checkPlayerAbove()`: Detect if player is on higher platform
-- `executeJump()`: Set velocityY to -220 * SCALE, apply horizontal boost toward player
-- `updateMovement()`: Horizontal chase or patrol
-- Copy Skitter's `checkWallsAndEdges()` and `checkEdgeAhead()` for patrol
+- ✅ `checkPlayerAbove()`: Detect if player is on higher platform
+- ✅ `executeJump()`: Set velocityY to -220 * SCALE, apply horizontal boost toward player
+- ✅ `updateMovement()`: Horizontal chase or patrol
+- ✅ Patrol logic with `checkWallsAndEdges()` and `checkEdgeAhead()`
 
 **Sprite Design**:
-- Procedural texture: dark body (0x2d2d2d), red eyes (0xff0000), visible legs
-- Size: 8x8 pixels scaled
-- Style matches existing enemies (procedural graphics using Phaser Graphics API)
+- ✅ Procedural texture: dark body (0x2d2d2d), red eyes (0xff0000), visible legs
+- ✅ Size: 8x8 pixels scaled
+- ✅ Style matches existing enemies (procedural graphics using Phaser Graphics API)
+- ✅ Custom death animation with leg fragment particles
 
 **EnemyManager Integration** (`src/systems/EnemyManager.js`):
-- Import Spider class (line ~4)
-- Add to enemyTypes registry (line ~29): `'spider': Spider`
+- ✅ Import Spider class (line 5)
+- ✅ Add to enemyTypes registry (line 40): `'spider': Spider`
+- ✅ Add collision with one-way platforms (line 153)
 
-**Testing**: Add spider to level JSON, verify patrol and jumping behavior
+**Testing**: Spider added to test-spider.json, accessible via `?test=spider`
 
 ### Phase 5: Polish & Tuning
 **Effort**: ~1 hour
@@ -238,24 +241,37 @@ checkPlayerAbove() {
 
 ## Testing Strategy
 
+### Test Level Access
+Access the spider test level in development by adding `?test=spider` to the URL:
+```
+http://localhost:5173/?test=spider
+```
+
+The test level includes:
+- 3 Spiders at different positions
+- 1 Skitter (for comparison)
+- 3 Web zones with different slowdown values (0.5, 0.4, 0.3)
+- Multiple platforms at different heights (for spider jump testing)
+- Coins and key shards for completion testing
+
 ### Unit Tests (Optional - Consider for Future)
 - Spider jump detection logic
 - Web zone overlap detection
 - Player speedModifier application
 
 ### Manual Testing Checklist
-- [ ] Player slowdown works correctly (Phase 1)
-- [ ] Web zones load from level data (Phase 3)
-- [ ] Web zones apply slowdown on overlap (Phase 2)
-- [ ] Web zones remove slowdown on exit (Phase 2)
-- [ ] Multiple overlapping zones use strongest slowdown (Phase 2)
-- [ ] Spider patrols horizontally (Phase 4)
-- [ ] Spider detects player above (Phase 4)
-- [ ] Spider jumps toward player on higher platform (Phase 4)
-- [ ] Spider respects jump cooldown (Phase 4)
-- [ ] Spider can be stomped (Phase 4)
-- [ ] Spider can be dashed (Phase 4)
-- [ ] Spider ignores web zone slowdown (Phase 5)
+- [x] Player slowdown works correctly (Phase 1)
+- [x] Web zones load from level data (Phase 3)
+- [x] Web zones apply slowdown on overlap (Phase 2)
+- [x] Web zones remove slowdown on exit (Phase 2)
+- [x] Multiple overlapping zones use strongest slowdown (Phase 2)
+- [x] Spider patrols horizontally (Phase 4)
+- [x] Spider detects player above (Phase 4)
+- [x] Spider jumps toward player on higher platform (Phase 4)
+- [x] Spider respects jump cooldown (Phase 4)
+- [x] Spider can be stomped (Phase 4)
+- [x] Spider can be dashed (Phase 4)
+- [ ] Spider ignores web zone slowdown (Phase 5) - *Not implemented yet*
 - [ ] Performance is stable with 5+ spiders and 5+ web zones (Phase 5)
 
 ---
@@ -301,21 +317,21 @@ checkPlayerAbove() {
 
 ## Definition of Done
 
-- [ ] Player speedModifier system implemented and tested
-- [ ] WebZone and WebZoneManager classes created
-- [ ] Web zones load from level JSON and render correctly
-- [ ] Web zones apply slowdown to player only
-- [ ] Spider enemy class created and registered
-- [ ] Spider AI patrols and jumps to follow player
-- [ ] Spider can be defeated via stomp/dash
-- [ ] At least one level includes spider + web zones
-- [ ] All manual tests pass
-- [ ] Code follows existing patterns and style
-- [ ] No performance regressions (60fps maintained)
-- [ ] No console errors or warnings
+- [x] Player speedModifier system implemented and tested
+- [x] WebZone and WebZoneManager classes created
+- [x] Web zones load from level JSON and render correctly
+- [x] Web zones apply slowdown to player only
+- [x] Spider enemy class created and registered
+- [x] Spider AI patrols and jumps to follow player
+- [x] Spider can be defeated via stomp/dash
+- [x] At least one level includes spider + web zones (test-spider.json)
+- [ ] All manual tests pass (Phase 5 remaining)
+- [x] Code follows existing patterns and style
+- [ ] No performance regressions (60fps maintained) - needs verification
+- [ ] No console errors or warnings - needs verification
 
 ---
 
-**Ready for Implementation**: Yes
-**Blockers**: None
-**Dependencies**: None (all systems in place)
+**Implementation Status**: Phases 1-4 Complete
+**Remaining**: Phase 5 (Polish & Tuning)
+**Test Level**: Access via `?test=spider` query parameter

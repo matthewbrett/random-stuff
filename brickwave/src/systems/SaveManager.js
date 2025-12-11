@@ -571,6 +571,12 @@ class SaveManager {
 
     const params = new URLSearchParams(window.location.search);
     const levelParam = params.get('level');
+    const testParam = params.get('test');
+
+    // Check for test level parameter first (?test=spider)
+    if (testParam) {
+      return this.getTestLevelData(testParam);
+    }
 
     if (!levelParam) return null;
 
@@ -590,6 +596,28 @@ class SaveManager {
     }
 
     console.warn('Invalid level parameter:', levelParam);
+    return null;
+  }
+
+  /**
+   * Get test level data for development testing (?test=spider)
+   * @param {string} testName - Name of the test level
+   * @returns {Object|null} Level data for the test level, or null
+   */
+  getTestLevelData(testName) {
+    // Available test levels
+    const testLevels = {
+      'spider': { world: 99, level: 1, levelKey: 'test-spider' }
+    };
+
+    const levelData = testLevels[testName.toLowerCase()];
+    if (levelData) {
+      // eslint-disable-next-line no-console
+      console.log(`🧪 Loading test level: ${testName}`);
+      return levelData;
+    }
+
+    console.warn('Unknown test level:', testName);
     return null;
   }
 }
