@@ -232,6 +232,39 @@
           "y": 304,
           "width": 16,
           "height": 24
+        },
+        {
+          "name": "web_zone",
+          "type": "web_zone",
+          "x": 152,
+          "y": 248,
+          "width": 32,
+          "height": 16,
+          "properties": [
+            {"name": "slowdown", "type": "float", "value": 0.4}
+          ]
+        },
+        {
+          "name": "web_zone",
+          "type": "web_zone",
+          "x": 272,
+          "y": 232,
+          "width": 24,
+          "height": 16,
+          "properties": [
+            {"name": "slowdown", "type": "float", "value": 0.5}
+          ]
+        },
+        {
+          "name": "web_zone",
+          "type": "web_zone",
+          "x": 280,
+          "y": 228,
+          "width": 24,
+          "height": 24,
+          "properties": [
+            {"name": "slowdown", "type": "float", "value": 0.3}
+          ]
         }
       ]
     },
@@ -283,6 +316,22 @@
           "y": 264,
           "width": 8,
           "height": 6
+        },
+        {
+          "name": "spider",
+          "type": "spider",
+          "x": 160,
+          "y": 256,
+          "width": 8,
+          "height": 8
+        },
+        {
+          "name": "spider",
+          "type": "spider",
+          "x": 280,
+          "y": 224,
+          "width": 8,
+          "height": 8
         },
         {
           "name": "sentryorb",

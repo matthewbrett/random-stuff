@@ -6968,6 +6968,22 @@
           "y": 144,
           "width": 8,
           "height": 8
+        },
+        {
+          "name": "spider",
+          "type": "spider",
+          "x": 200,
+          "y": 168,
+          "width": 8,
+          "height": 8
+        },
+        {
+          "name": "spider",
+          "type": "spider",
+          "x": 320,
+          "y": 168,
+          "width": 8,
+          "height": 8
         }
       ]
     },

@@ -133,7 +133,7 @@ export default class WebZone {
    * @param {number} time - Current game time
    * @param {number} delta - Time since last frame
    */
-  update(time, delta) {
+  update(_time, _delta) {
     // Static zone - no updates needed currently
     // Could add subtle shimmer animation here later
   }
