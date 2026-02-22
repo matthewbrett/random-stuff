@@ -14,6 +14,20 @@ A browser-based pixel platformer with a unique "phase brick" mechanic. **[MVP CO
 - **Features:** 5 levels, mobile support, accessibility features, difficulty scaling
 - **Docs:** See [brickwave/docs/](brickwave/docs/) for all BRICKWAVE documentation
 
+### ⏱️ Time Marker
+A simple, elegant clock web app that displays the current time and lets you mark moments. **[COMPLETE]**
+
+- **Location:** `/time-marker/`
+- **Status:** Fully functional
+- **Tech:** Vanilla HTML/CSS/JavaScript (single file)
+- **Features:**
+  - Live clock display (hh:mm:ss format)
+  - Mark moments in time with a button
+  - Track elapsed time since most recent mark
+  - Add optional descriptions to each mark
+  - Delete marks individually
+  - Mobile responsive design
+
 ## Repository Documentation
 
 - **[AGENTS.md](AGENTS.md)** - Repository guidelines and coding conventions for AI agents
@@ -38,4 +52,4 @@ npm install
 npm run dev  # Start dev server at http://localhost:3001
 ```
 
-**Last Updated:** 2025-12-08
+**Last Updated:** 2026-02-23

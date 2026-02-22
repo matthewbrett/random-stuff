@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Marker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 70%;
+            max-width: 1200px;
+        }
+
+        .clock {
+            width: 100%;
+            font-size: 15vw;
+            font-weight: 300;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            letter-spacing: 0.1em;
+            text-align: center;
+        }
+
+        .mark-button {
+            margin-top: 30px;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .mark-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .mark-button:active {
+            transform: scale(0.95);
+        }
+
+        .marks-list {
+            margin-top: 30px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .mark-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: white;
+            font-size: 2rem;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.3s ease;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            flex-wrap: wrap;
+        }
+
+        .mark-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .mark-item-content {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .mark-item-buttons {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .mark-description {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-style: italic;
+        }
+
+        .description-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 5px 10px;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-style: italic;
+        }
+
+        .description-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .description-input:focus {
+            outline: none;
+            border-color: white;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .edit-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.3rem;
+            padding: 5px 10px;
+            transition: transform 0.2s ease;
+            opacity: 0.7;
+        }
+
+        .edit-button:hover {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .delete-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            padding: 5px 10px;
+            transition: transform 0.2s ease;
+            opacity: 0.7;
+        }
+
+        .delete-button:hover {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 98%;
+            }
+
+            .mark-item {
+                font-size: 1.5rem;
+                padding: 12px 15px;
+                gap: 10px;
+            }
+
+            .mark-item-content {
+                gap: 8px;
+            }
+
+            .mark-description {
+                font-size: 1rem;
+            }
+
+            .description-input {
+                font-size: 1rem;
+            }
+
+            .edit-button,
+            .delete-button {
+                font-size: 1.1rem;
+                padding: 2px 5px;
+            }
+
+            .mark-item-buttons {
+                gap: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="clock" id="clock">00:00:00</div>
+        <button class="mark-button" onclick="markTime()">Mark</button>
+        <div class="marks-list" id="marks-list"></div>
+    </div>
+
+    <script>
+        let marks = [];
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+
+            // Update the time difference for the first mark
+            if (marks.length > 0) {
+                updateFirstMarkDifference();
+            }
+        }
+
+        function markTime() {
+            const now = new Date();
+            marks.unshift({
+                timestamp: now,
+                timeString: formatTime(now),
+                description: ''
+            });
+            renderMarks();
+        }
+
+        function editDescription(index, event) {
+            event.stopPropagation();
+            const markItem = event.target.closest('.mark-item');
+            const content = markItem.querySelector('.mark-item-content');
+            const existingInput = markItem.querySelector('.description-input');
+
+            if (existingInput) {
+                existingInput.focus();
+                return;
+            }
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'description-input';
+            input.placeholder = 'Add a description...';
+            input.value = marks[index].description || '';
+
+            input.addEventListener('blur', function() {
+                marks[index].description = this.value;
+                renderMarks();
+            });
+
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    marks[index].description = this.value;
+                    renderMarks();
+                }
+            });
+
+            input.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+
+            content.appendChild(input);
+            input.focus();
+        }
+
+        function formatTime(date) {
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function formatTimeDifference(milliseconds) {
+            const totalSeconds = Math.floor(milliseconds / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            if (hours > 0) {
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            } else {
+                return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+        }
+
+        function updateFirstMarkDifference() {
+            if (marks.length === 0) return;
+
+            const firstMarkSpan = document.getElementById('first-mark-time');
+            if (firstMarkSpan && !firstMarkSpan.closest('.mark-item').querySelector('.description-input')) {
+                const now = new Date();
+                const difference = now - marks[0].timestamp;
+                const diffString = formatTimeDifference(difference);
+                firstMarkSpan.textContent = `${marks[0].timeString} (${diffString})`;
+            }
+        }
+
+        function deleteMark(index) {
+            marks.splice(index, 1);
+            renderMarks();
+        }
+
+        function renderMarks() {
+            const marksList = document.getElementById('marks-list');
+            marksList.innerHTML = '';
+
+            marks.forEach((mark, index) => {
+                const markItem = document.createElement('div');
+                markItem.className = 'mark-item';
+                markItem.onclick = (e) => editDescription(index, e);
+
+                const content = document.createElement('div');
+                content.className = 'mark-item-content';
+
+                const timeSpan = document.createElement('span');
+
+                if (index === 0) {
+                    // First mark shows time difference
+                    timeSpan.id = 'first-mark-time';
+                    const now = new Date();
+                    const difference = now - mark.timestamp;
+                    const diffString = formatTimeDifference(difference);
+                    timeSpan.textContent = `${mark.timeString} (${diffString})`;
+                } else {
+                    // Other marks just show the time
+                    timeSpan.textContent = mark.timeString;
+                }
+
+                content.appendChild(timeSpan);
+
+                // Show description if it exists
+                if (mark.description) {
+                    const descriptionSpan = document.createElement('span');
+                    descriptionSpan.className = 'mark-description';
+                    descriptionSpan.textContent = mark.description;
+                    content.appendChild(descriptionSpan);
+                }
+
+                const buttons = document.createElement('div');
+                buttons.className = 'mark-item-buttons';
+
+                const editButton = document.createElement('button');
+                editButton.className = 'edit-button';
+                editButton.innerHTML = '✏️';
+                editButton.onclick = (e) => editDescription(index, e);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.className = 'delete-button';
+                deleteButton.innerHTML = '🗑️';
+                deleteButton.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteMark(index);
+                };
+
+                buttons.appendChild(editButton);
+                buttons.appendChild(deleteButton);
+
+                markItem.appendChild(content);
+                markItem.appendChild(buttons);
+
+                marksList.appendChild(markItem);
+            });
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>
