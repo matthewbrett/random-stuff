@@ -43,6 +43,8 @@ jobs:
           cp index.html deploy/
           # Copy BRICKWAVE to /brickwave subdirectory
           cp -r brickwave/dist deploy/brickwave
+          # Copy time-marker (no build needed - single HTML file)
+          cp -r time-marker deploy/time-marker
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
