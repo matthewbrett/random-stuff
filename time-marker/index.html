@@ -93,6 +93,11 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        .mark-item--first {
+            font-size: 2.6rem;
+            background: rgba(255, 255, 255, 0.22);
+        }
+
         .mark-item-content {
             display: flex;
             flex-wrap: wrap;
@@ -188,6 +193,10 @@
                 font-size: 1.5rem;
                 padding: 12px 15px;
                 gap: 10px;
+            }
+
+            .mark-item--first {
+                font-size: 1.9rem;
             }
 
             .mark-item-content {
@@ -328,7 +337,7 @@
 
             marks.forEach((mark, index) => {
                 const markItem = document.createElement('div');
-                markItem.className = 'mark-item';
+                markItem.className = index === 0 ? 'mark-item mark-item--first' : 'mark-item';
                 markItem.onclick = (e) => editDescription(index, e);
 
                 const content = document.createElement('div');
