@@ -346,15 +346,17 @@
                 const timeSpan = document.createElement('span');
 
                 if (index === 0) {
-                    // First mark shows time difference
+                    // First mark shows time difference from now
                     timeSpan.id = 'first-mark-time';
                     const now = new Date();
                     const difference = now - mark.timestamp;
                     const diffString = formatTimeDifference(difference);
                     timeSpan.textContent = `${mark.timeString} (${diffString})`;
                 } else {
-                    // Other marks just show the time
-                    timeSpan.textContent = mark.timeString;
+                    // Historical marks show duration between this mark and the next (more recent) one
+                    const duration = marks[index - 1].timestamp - mark.timestamp;
+                    const durationString = formatTimeDifference(duration);
+                    timeSpan.textContent = `${mark.timeString} (${durationString})`;
                 }
 
                 content.appendChild(timeSpan);
