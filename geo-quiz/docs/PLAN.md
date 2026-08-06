@@ -4,7 +4,7 @@ A front-end-only web game for learning the world's countries and their capitals.
 You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
-**Status:** Planned, not yet built
+**Status:** Phase 0 complete — data pipeline built and verified. Game not yet playable.
 **Last Updated:** 2026-08-06
 
 ---
@@ -105,17 +105,59 @@ country below the area threshold gets a small circle marker in an overlay layer,
 with the same neutral/green/red states as the filled shapes. This is a v1 requirement,
 not polish — without it a sixth of the game has no visual response.
 
-### Generator
+### Generator — built ✓
 
-A one-off dev script, `tools/build-data.mjs`, run manually with `node`. Its output is
-committed, so the app itself has **no build step and no runtime dependencies**.
+`tools/build-data.mjs`, run manually with `node`. Output is committed, so the app has
+**no build step and no runtime dependencies**. Actual output:
 
-It emits:
-- `data/world.svg` — one `<path id="m49-250">` per country, plus the marker layer
-- `data/countries.js` — 195 entries: `{ m49, name, official, capitals[], aliases[] }`
+```
+· drew 5 unidentified areas as inert
+· grafted Tuvalu geometry from the 10m dataset
+✓ 195/195 countries, all with geometry and a capital
+  data/world.svg     195 playable + 45 inert paths, 34 markers, 784 KB (138 KB gzipped)
+  data/countries.js  217 accepted country spellings, 24 KB (5 KB gzipped)
+```
+
+- `data/world.svg` — `<path id="c250">` per country, in three groups: `#countries`
+  (playable), `#other` (territories and disputed areas, drawn but inert), `#markers`
+  (micro-state dots)
+- `data/countries.js` — 195 entries `{ m49, name, official, capitals[], aliases[], micro }`
+
+Hand-maintained answer data is kept separately in `tools/aliases.mjs` so regenerating
+never clobbers it.
 
 Note: the npm registry is reachable from this environment but `unpkg.com` is blocked by
 the network policy, so fetch source data via `npm pack`, not a CDN URL.
+
+### Two traps in the source geometry
+
+Both were found by rendering the map and looking at it, not from the numbers — the
+country count was a clean 195/195 while both bugs were live.
+
+1. **M49 codes are not unique.** Australia shares `036` with Ashmore and Cartier Islands.
+   Keying a map by id last-wins silently replaced Australia with a speck, which then got
+   classified as a micro-state. Features sharing a code are now merged into one
+   MultiPolygon — geographically correct, since the territory really does belong to that
+   country's code.
+2. **Some features have no id at all** — Kosovo, Somaliland, Northern Cyprus, Siachen
+   Glacier, Indian Ocean Territories. `String(undefined)` collapsed all five onto one key
+   and dropped four of them, leaving a hole in the Balkans. They now get synthetic keys
+   and render as inert background.
+
+The generator asserts against both: a fixed list of large countries must never be
+classified as micro, alias keys must reference a real country, and no alias may collide
+with another answer.
+
+### Verification
+
+The generated map was rendered headless with fake found/missed states applied. Confirmed:
+Australia whole, no holes in Europe, Greenland correctly inert, and the micro-state dots
+for Vatican City, Malta, Singapore, Monaco and Bahrain all sitting in the right place and
+taking the state colour.
+
+One CSS gotcha surfaced there, worth carrying into Phase 1: `#countries path` outranks
+`#c250` on specificity, so **state must be applied as a class**
+(`#countries path.found`), never by styling the id directly.
 
 ---
 
@@ -305,7 +347,7 @@ one is that?" in both directions.
 
 | Phase | Deliverable |
 |---|---|
-| **0** | `tools/build-data.mjs` → committed `world.svg` + `countries.js`. Assert 195/195 |
+| **0** ✓ | `tools/build-data.mjs` → committed `world.svg` + `countries.js`. Asserts 195/195 |
 | **1** | Shell, nav, map renders neutral, responsive layout |
 | **2** | Input + matching engine + green fill + list + counter |
 | **3** | Timer, win detection, Give up, red reveal of missing |
@@ -313,7 +355,7 @@ one is that?" in both directions.
 | **5** | Micro-state markers, map↔list cross-highlight, a11y pass, mobile, reduced motion |
 | **6** | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 
-Phase 0 is largely proven already by the spike in §3.
+Phase 0 is complete (§3). Phase 1 starts from a working `world.svg` and answer set.
 
 ---
 
