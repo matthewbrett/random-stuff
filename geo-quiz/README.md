@@ -4,8 +4,17 @@ A front-end-only web game for learning the world's countries and their capitals.
 many as you can from memory against a world map; correct answers turn green and a timer
 measures the attempt.
 
-**Status:** In development — Phases 0–2 complete. Playable in both modes; the timer, win
-detection and Give up button arrive next. See [docs/PLAN.md](docs/PLAN.md) for the plan.
+**Status:** Playable end to end in both modes, with a timer and an end-of-game reveal.
+Remaining work is polish and deployment — see [docs/PLAN.md](docs/PLAN.md).
+
+## How to play
+
+Pick **Countries** or **Capitals**, then type names and press Enter. Correct answers turn
+green and join the list on the right. The timer starts on your first keystroke and stops
+when you have all 195 or press **Give up**, which reveals everything you missed in red.
+
+Matching is strict — accents, case and punctuation are ignored, and common abbreviations
+like `USA`, `UK` and `UAE` are accepted, but spelling has to be right.
 
 ## Running it
 

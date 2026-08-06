@@ -96,6 +96,11 @@ body {
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
   color: var(--muted);
+  transition: color 0.3s ease;
+}
+
+.timer.running {
+  color: var(--text);
 }
 
 /* --- Layout --------------------------------------------------------------------- */
@@ -250,6 +255,18 @@ body {
   border-color: var(--muted);
 }
 
+/* Once the game is over, restarting is the main thing you want to do. */
+.give-up.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.give-up.is-primary:hover {
+  filter: brightness(1.1);
+  color: #fff;
+}
+
 /* --- List ----------------------------------------------------------------------- */
 
 .list-panel {
@@ -317,6 +334,22 @@ body {
 
 .answer-row.is-missed .label {
   color: var(--muted);
+}
+
+.answer-group {
+  position: sticky;
+  top: 0;
+  padding: 12px 18px 6px;
+  background: var(--panel);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.answer-group:first-child {
+  padding-top: 4px;
 }
 
 @keyframes flash {

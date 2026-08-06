@@ -4,8 +4,8 @@ A front-end-only web game for learning the world's countries and their capitals.
 You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
-**Status:** Phases 0–2 complete — playable in both modes. Timer, win detection and Give
-up still to come.
+**Status:** Phases 0–3 complete — the game is fully playable end to end. Remaining work
+is polish (Phase 5) and docs/deploy (Phase 6).
 **Last Updated:** 2026-08-06
 
 ---
@@ -375,8 +375,8 @@ one is that?" in both directions.
 | **0** ✓ | `tools/build-data.mjs` → committed `world.svg` + `countries.js`. Asserts 195/195 |
 | **1** ✓ | Shell, nav, map renders neutral, responsive layout |
 | **2** ✓ | Input + matching engine + green fill + list + counter |
-| **3** | Timer, win detection, Give up, red reveal of missing |
-| **4** | Capitals mode + mode switch |
+| **3** ✓ | Timer, win detection, Give up, red reveal of missing |
+| **4** ✓ | Capitals mode + mode switch *(landed with Phase 2 — both modes share one index)* |
 | **5** | Micro-state markers, map↔list cross-highlight, a11y pass, mobile, reduced motion |
 | **6** | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 
@@ -425,6 +425,27 @@ Feedback is layered rather than a single "not recognised":
 
 Only a correct answer clears the input. Everything else keeps the text so a near-miss is
 cheap to fix, which matters more under strict matching.
+
+### Phase 3 notes
+
+The game is a three-state machine — `idle → running → finished`. The timer starts on the
+first keystroke, is recomputed from its start time on every tick rather than accumulated
+(so it cannot drift), and freezes on finish. Verified: it stays at `00:00` while the page
+sits idle, starts on the first character, and rolls `59:59 → 1:00:00` past the hour.
+
+Ending the game reveals everything at once: missing countries painted red on the map and
+listed with a ✗, the list re-sorted alphabetically with found above missed. Group headings
+appear only when there is something to separate — a clean sweep is one uniform list.
+
+Two additions the plan did not call for but the phase needed:
+
+- **Play again.** Winning or giving up otherwise leaves no way back to a fresh game short
+  of a page reload. The Give up button becomes the restart, styled as the primary action
+  since by then it is the only thing left to do.
+- **Give up confirms first.** It is a one-click end to a long run, so it asks.
+
+The panel header switches from *Found* to *Result* when the game ends, which also stops it
+duplicating the "Found — n" group heading directly beneath it.
 
 ---
 
