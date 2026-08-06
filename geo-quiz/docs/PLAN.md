@@ -40,7 +40,7 @@ map and get your bearings first.
 |---|---|
 | Country set | **195** — 193 UN members + Vatican City + Palestine |
 | Map | **Inline SVG, no runtime build.** Pre-generated paths, plain static files |
-| Answer matching | **Aliases + light typo tolerance**, with hard guards (see §5) |
+| Answer matching | **Strict.** Exact match after normalisation, plus a small curated alias list (see §5) |
 | Zoom / pan | **Not in v1.** Static full-world view |
 | Persistence | **None.** Refresh = new game. Revisit later |
 
@@ -172,10 +172,39 @@ Applied to both input and every candidate before comparison:
 
 ### Aliases
 
-A hand-maintained table on top of `altSpellings`, covering what people actually type:
-`USA` / `US` / `America`, `UK` / `Britain` / `Great Britain`, `UAE`, `Holland`,
-`Ivory Coast`, `Burma`, `Czechia`, `Swaziland`, `Cape Verde`, `East Timor`, `Macedonia`,
-`South Korea` / `North Korea`, `Holy See`, `DRC` / `Congo-Kinshasa`.
+Small and hand-maintained. The test an alias must pass: **it has to be a legitimate short
+form of the country's name**, not a colloquialism that names the wrong thing.
+
+Three categories are accepted:
+
+**1. Abbreviations and standard short names**
+
+`USA`, `US`, `UK`, `UAE`, `DRC`, `CAR` (Central African Republic), and the conventional
+short names — `United Kingdom` for *United Kingdom of Great Britain and Northern
+Ireland*, `Russia` for *Russian Federation*, `Bolivia`, `Tanzania`, `Venezuela`, `Iran`,
+`Syria`, `Laos`, `Vietnam`, `Brunei`, `North Korea` / `South Korea`. These are real
+abbreviations of the full name, so they're in.
+
+**2. Established English exonyms**
+
+Where English has its own long-standing name for the country: `Ivory Coast`
+(Côte d'Ivoire), `East Timor` (Timor-Leste), `Cape Verde` (Cabo Verde), `Holy See`
+(Vatican City). Both forms are current and correct.
+
+**3. Former official names**
+
+`Burma`, `Swaziland`, `Macedonia`, `Turkey`. Accepted, but the list always renders the
+**current** canonical name — so typing `Burma` scores the point and shows you *Myanmar*,
+which is the behaviour you want from a learning tool. Easy to switch off if you'd rather
+they be rejected outright.
+
+**Explicitly rejected** — these name something other than the country:
+
+| Rejected | Why |
+|---|---|
+| `America` | A continent, or two. Not a country name |
+| `Britain`, `Great Britain`, `England` | GB is the island, excluding Northern Ireland; England is one of four nations |
+| `Holland` | Two provinces of twelve. Same error as Great Britain |
 
 **Capitals need their own alternates table** — several countries have a genuinely
 contested or dual capital, and all of these should be accepted:
@@ -188,25 +217,35 @@ contested or dual capital, and all of these should be accepted:
 - Myanmar → Naypyidaw *or* Yangon
 - South Africa → any of its three
 
-### Typo tolerance, and its guard rails
+### Strict matching — no typo tolerance
 
-Levenshtein distance ≤ 1, and **only** for candidates ≥ 6 characters.
+An answer must match a canonical name or an alias **exactly** once normalised. No
+Levenshtein, no fuzzy fallback. `Nigera` is simply wrong.
 
-This needs a hard guard, because some of the most confusable country pairs are exactly
-one or two edits apart:
+This is a real simplification, and it removes a whole class of bug: the most confusable
+country pairs are only one or two edits apart, so any fuzzy matcher risks silently
+crediting the wrong country.
 
 > Niger / Nigeria · Austria / Australia · Iran / Iraq · Zambia / Gambia ·
 > Slovakia / Slovenia · Mali / Malawi · Guinea / Guyana
 
-Two rules prevent the game from silently accepting the wrong country:
+With strict matching these need no special handling at all — the confusable-set flag and
+the uniqueness rule both disappear. Matching becomes a single hash lookup against a
+prebuilt `normalised string → m49` map, built once at load.
 
-1. **Uniqueness.** If a fuzzy input is within threshold of more than one country, reject
-   it — no guessing which was meant.
-2. **Confusable set.** Countries on the list above are flagged in the data and require an
-   **exact** normalised match. No fuzzy path at all.
+Two consequences worth carrying into the UI:
 
-Ambiguous-by-design inputs are rejected with a nudge rather than a plain "wrong":
-typing `Congo` alone returns *"Which one? Try 'DR Congo' or 'Republic of the Congo'."*
+- **Keeping the text in the box on a wrong answer becomes essential**, not a nicety. It's
+  the only way to recover from a near-miss spelling without retyping the whole name.
+- **Say *why* it failed.** "Not recognised" is ambiguous between *wrong spelling* and
+  *not a country*. Since matching is exact, an unrecognised entry that's within one edit
+  of a real name can still be detected and reported as a **spelling** hint —
+  *"Close — check your spelling"* — without ever auto-accepting it. The leniency goes
+  into the feedback, not the scoring.
+
+Ambiguous-by-design inputs still get a nudge rather than a flat rejection: typing
+`Congo` returns *"Which one? Try 'DR Congo' or 'Republic of the Congo'."*, and `Korea`
+asks north or south.
 
 ---
 
