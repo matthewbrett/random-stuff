@@ -4,7 +4,8 @@ A front-end-only web game for learning the world's countries and their capitals.
 You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
-**Status:** Phases 0–1 complete — data pipeline and app shell. Answer entry not yet wired.
+**Status:** Phases 0–2 complete — playable in both modes. Timer, win detection and Give
+up still to come.
 **Last Updated:** 2026-08-06
 
 ---
@@ -373,7 +374,7 @@ one is that?" in both directions.
 |---|---|
 | **0** ✓ | `tools/build-data.mjs` → committed `world.svg` + `countries.js`. Asserts 195/195 |
 | **1** ✓ | Shell, nav, map renders neutral, responsive layout |
-| **2** | Input + matching engine + green fill + list + counter |
+| **2** ✓ | Input + matching engine + green fill + list + counter |
 | **3** | Timer, win detection, Give up, red reveal of missing |
 | **4** | Capitals mode + mode switch |
 | **5** | Micro-state markers, map↔list cross-highlight, a11y pass, mobile, reduced motion |
@@ -396,6 +397,34 @@ Two CSS traps worth recording, both found by measuring rather than eyeballing:
 
 State colours are defined for `.found` and `.missed` already, so Phase 2 only has to add
 and remove classes.
+
+### Phase 2 notes
+
+The matcher lives in `match.js`, separate from the UI, and is exercised by a scripted
+browser pass covering casing, accents, punctuation, leading "the", every alias category,
+both rejected colloquialisms and ambiguous inputs, and each confusable pair
+(Niger/Nigeria, Austria/Australia, Iran/Iraq, Zambia/Gambia, Mali/Malawi) resolving to
+itself.
+
+**Near-miss hints include transpositions.** "Austrai" for "Austria" is Levenshtein
+distance 2, so the original one-edit check missed one of the commonest typing slips. The
+check is now Damerau — one insertion, deletion, substitution *or* adjacent transposition.
+This is safe precisely because the near-miss branch is only reached after exact matching
+has already failed, and it only chooses the wording of the feedback. It can never credit
+an answer.
+
+Feedback is layered rather than a single "not recognised":
+
+| Input | Response |
+|---|---|
+| `Nigera` | Close — check your spelling. |
+| `Paris` in countries mode | That's a capital city — name the country it belongs to. |
+| `Holland` | Holland is two provinces of twelve. Try the country's name. |
+| `Congo` | Which one? Try 'DR Congo' or 'Republic of the Congo'. |
+| `France` when already found | Already found France. *(row flashes)* |
+
+Only a correct answer clears the input. Everything else keeps the text so a near-miss is
+cheap to fix, which matters more under strict matching.
 
 ---
 

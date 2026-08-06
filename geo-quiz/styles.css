@@ -294,6 +294,51 @@ body {
   padding: 8px 0;
 }
 
+.answer-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 18px;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+/* Never rely on colour alone -- the glyph carries the same meaning for anyone who
+   cannot separate the green from the red. */
+.mark {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  color: var(--land-found);
+}
+
+.answer-row.is-missed .mark {
+  color: var(--land-missed);
+}
+
+.answer-row.is-missed .label {
+  color: var(--muted);
+}
+
+@keyframes flash {
+  0%, 100% { background: transparent; }
+  25%      { background: rgba(102, 126, 234, 0.28); }
+}
+
+.answer-row.flash {
+  animation: flash 0.6s ease;
+}
+
+@keyframes shake {
+  0%, 100%    { transform: translateX(0); }
+  20%, 60%    { transform: translateX(-4px); }
+  40%, 80%    { transform: translateX(4px); }
+}
+
+.answer.shake {
+  animation: shake 0.28s ease;
+  border-color: var(--land-missed);
+}
+
 .list-empty {
   flex: 0 0 auto;
   padding: 16px 18px 0;
