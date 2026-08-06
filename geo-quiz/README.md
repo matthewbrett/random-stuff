@@ -4,8 +4,8 @@ A front-end-only web game for learning the world's countries and their capitals.
 many as you can from memory against a world map; correct answers turn green and a timer
 measures the attempt.
 
-**Status:** In development — Phase 0 (data pipeline) complete, game not yet playable.
-See [docs/PLAN.md](docs/PLAN.md) for the full plan.
+**Status:** In development — Phases 0–1 complete (data pipeline, app shell and map).
+Answer entry is not yet wired up. See [docs/PLAN.md](docs/PLAN.md) for the full plan.
 
 ## Running it
 

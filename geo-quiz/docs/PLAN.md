@@ -4,7 +4,7 @@ A front-end-only web game for learning the world's countries and their capitals.
 You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
-**Status:** Phase 0 complete — data pipeline built and verified. Game not yet playable.
+**Status:** Phases 0–1 complete — data pipeline and app shell. Answer entry not yet wired.
 **Last Updated:** 2026-08-06
 
 ---
@@ -372,14 +372,30 @@ one is that?" in both directions.
 | Phase | Deliverable |
 |---|---|
 | **0** ✓ | `tools/build-data.mjs` → committed `world.svg` + `countries.js`. Asserts 195/195 |
-| **1** | Shell, nav, map renders neutral, responsive layout |
+| **1** ✓ | Shell, nav, map renders neutral, responsive layout |
 | **2** | Input + matching engine + green fill + list + counter |
 | **3** | Timer, win detection, Give up, red reveal of missing |
 | **4** | Capitals mode + mode switch |
 | **5** | Micro-state markers, map↔list cross-highlight, a11y pass, mobile, reduced motion |
 | **6** | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 
-Phase 0 is complete (§3). Phase 1 starts from a working `world.svg` and answer set.
+Phase 0 is complete (§3). Phase 1 is complete: `index.html`, `styles.css` and `app.js`
+render the nav, the neutral map and the (inert) entry and list panels.
+
+### Layout notes from Phase 1
+
+Two CSS traps worth recording, both found by measuring rather than eyeballing:
+
+- **The app is pinned to exactly one viewport on desktop** (`height: 100dvh; overflow:
+  hidden`). With `min-height` instead, a short window (1280×600) let the column grow past
+  the viewport and pushed the input row and status bar below the fold rather than
+  shrinking the map.
+- **The mobile breakpoint needs `align-content: start`.** Grid's default is `stretch`,
+  which shares body's leftover `min-height` space between the two auto rows and
+  re-inflated the map to nearly double its natural height.
+
+State colours are defined for `.found` and `.missed` already, so Phase 2 only has to add
+and remove classes.
 
 ---
 
