@@ -30,7 +30,11 @@ The loop:
    filled red on the map.
 
 The timer starts on your **first keystroke**, not on page load, so you can look at the
-map and get your bearings first.
+map and get your bearings first. It reads `mm:ss`.
+
+Wrong answers carry no penalty — guess as often as you like. The only cost is the
+seconds spent typing, which is enough to discourage spraying guesses without punishing
+someone who simply can't spell Kyrgyzstan.
 
 ---
 
@@ -271,6 +275,21 @@ asks north or south.
 - The list is newest-first while playing, so the last answer is always visible without
   scrolling. On finish it re-sorts alphabetically, found and missing grouped.
 - Mobile: map on top, list collapses to a counter that expands on tap.
+- **Timer** reads `mm:ss`, rolling to `h:mm:ss` past an hour.
+
+### Linking the map to the list
+
+A red country tells you *where* you went wrong but not *what* it was. Rather than
+permanently labelling the map — which gets unreadable fast around Europe, the Caribbean
+and West Africa — the two panels cross-highlight:
+
+- Hovering (or tapping) a country shows a tooltip with its name, and highlights the
+  matching list row.
+- Hovering a list row outlines that country on the map, and nudges the view toward it.
+
+This works during play too: hovering a found country confirms what you named it. On
+touch, tap-to-identify is the same gesture. No labels, no clutter, and it answers "which
+one is that?" in both directions.
 
 ### Accessibility
 
@@ -291,7 +310,7 @@ asks north or south.
 | **2** | Input + matching engine + green fill + list + counter |
 | **3** | Timer, win detection, Give up, red reveal of missing |
 | **4** | Capitals mode + mode switch |
-| **5** | Micro-state markers, a11y pass, mobile, reduced motion |
+| **5** | Micro-state markers, map↔list cross-highlight, a11y pass, mobile, reduced motion |
 | **6** | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 
 Phase 0 is largely proven already by the spike in §3.
@@ -304,6 +323,10 @@ Held back to keep the first version small — each is easy to add later:
 
 - Persistence (best times, resume) — would need `localStorage`
 - Zoom / pan
+- **A penalty system for wrong answers.** For v1 a wrong guess costs only the seconds it
+  took to type, which is penalty enough. Worth revisiting once there's a sense of how the
+  game actually plays — a time penalty would need care, since it punishes typos as hard
+  as genuine blanks
 - Hints, per-continent games, streaks
 - Flags mode
 - "Reveal one" button
@@ -311,9 +334,14 @@ Held back to keep the first version small — each is easy to add later:
 
 ---
 
-## 9. Open questions
+## 9. Resolved decisions
 
-1. **Timer format** — plain `mm:ss`, or centiseconds for time-attack feel?
-2. **On finish, should the map label the countries you missed?** Red fill tells you
-   *where* but not *what*; labels would help learning but clutter the map.
-3. **Should a wrong answer cost anything?** Currently it's free — unlimited guessing.
+All the open questions from the first draft are now settled:
+
+| Question | Decision |
+|---|---|
+| Timer format | `mm:ss`, rolling to `h:mm:ss` past an hour |
+| Wrong-answer penalty | None. Wasted time is the cost; penalties are a later idea |
+| Labelling missed countries | No labels. Map and list cross-highlight on hover/tap instead (§6) |
+| Matching strictness | Exact after normalisation; no fuzzy matching (§5) |
+| Alias policy | Abbreviations, English exonyms, former official names. No `America`, `Britain`, `Holland` (§5) |
