@@ -44,3 +44,7 @@ Both are handled by the generator, but worth knowing if you touch it:
 - **Some features have no code at all** (Kosovo, Somaliland, Northern Cyprus, Siachen
   Glacier, Indian Ocean Territories). They get synthetic keys and are drawn as inert
   background so the map has no holes.
+- **A country's centroid is not always on the country.** Island nations scattered across
+  an ocean can have a centroid in open water — Kiribati straddles the antimeridian, so
+  its centroid is ~630 units out in the empty Pacific. Pins anchor to the largest
+  landmass instead.

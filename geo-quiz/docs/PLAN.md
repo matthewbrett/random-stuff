@@ -100,10 +100,32 @@ At this projection **68 of the 241 shapes render smaller than 4px²** — Vatica
 Singapore, Malta, Bahrain, and most island states are effectively invisible. Turning
 them green would produce no visible feedback at all.
 
-**Mitigation:** the generator also emits a projected centroid for every country. Any
-country below the area threshold gets a small circle marker in an overlay layer, styled
-with the same neutral/green/red states as the filled shapes. This is a v1 requirement,
-not polish — without it a sixth of the game has no visual response.
+**Mitigation:** countries below the area threshold get a **map pin** in an overlay layer —
+a teardrop whose tip sits on the country and whose bulb floats above it, styled with the
+same neutral/green/red states as the filled shapes. This is a v1 requirement, not polish:
+without it a sixth of the game has no visual response.
+
+A pin rather than a plain dot because a dot on a 2px island tells you *something is here*
+without telling you where — the pin's tip marks the exact spot while the bulb is big
+enough to see and to colour.
+
+Three things make the pins actually work:
+
+- **Anchor on the largest landmass, not the centroid.** For island nations scattered
+  across an ocean the centroid falls in open water. Kiribati is the worst case: it
+  straddles the antimeridian, so its centroid lands ~630 units away in empty Pacific,
+  nowhere near any of its islands. Anchoring to the biggest island always lands on
+  actual land.
+- **Declutter.** The eastern Caribbean has eight micro-states within a few pixels and is
+  an illegible clump if pins are drawn where they fall. Overlapping pins are pushed apart
+  by iterative pairwise separation, each tethered to within 70 units of what it marks.
+  Positions are static, so this is solved once at build time and costs nothing at runtime.
+- **Leader lines.** Any pin nudged off its anchor gets a line back to the true spot, so a
+  displaced pin still reads as pointing somewhere specific. 11 of 34 currently need one.
+
+Pins are also clamped inside the viewBox — Tuvalu sits at x=1997 of 2000 and would
+otherwise have its bulb sliced off by the edge. Assertions cover all of it: every
+micro-state has a pin, and no pin is clipped.
 
 ### Generator — built ✓
 
@@ -114,13 +136,13 @@ not polish — without it a sixth of the game has no visual response.
 · drew 5 unidentified areas as inert
 · grafted Tuvalu geometry from the 10m dataset
 ✓ 195/195 countries, all with geometry and a capital
-  data/world.svg     195 playable + 45 inert paths, 34 markers, 784 KB (138 KB gzipped)
+  data/world.svg     195 playable + 45 inert paths, 34 pins (11 nudged), 790 KB
   data/countries.js  217 accepted country spellings, 24 KB (5 KB gzipped)
 ```
 
-- `data/world.svg` — `<path id="c250">` per country, in three groups: `#countries`
+- `data/world.svg` — `<path id="c250">` per country, in four groups: `#countries`
   (playable), `#other` (territories and disputed areas, drawn but inert), `#markers`
-  (micro-state dots)
+  (micro-state pins, `<g id="m336">`), `#leaders` (leader lines, `<line id="l336">`)
 - `data/countries.js` — 195 entries `{ m49, name, official, capitals[], aliases[], micro }`
 
 Hand-maintained answer data is kept separately in `tools/aliases.mjs` so regenerating
@@ -151,9 +173,11 @@ with another answer.
 ### Verification
 
 The generated map was rendered headless with fake found/missed states applied. Confirmed:
-Australia whole, no holes in Europe, Greenland correctly inert, and the micro-state dots
+Australia whole, no holes in Europe, Greenland correctly inert, and the micro-state pins
 for Vatican City, Malta, Singapore, Monaco and Bahrain all sitting in the right place and
-taking the state colour.
+taking the state colour. The Caribbean and Mediterranean clusters were checked at detail
+crop level — eight overlapping pins in the eastern Caribbean separate cleanly, each with a
+leader line back to its island.
 
 One CSS gotcha surfaced there, worth carrying into Phase 1: `#countries path` outranks
 `#c250` on specificity, so **state must be applied as a class**
