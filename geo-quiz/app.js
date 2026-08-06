@@ -50,10 +50,12 @@ const el = {
 /** Loads the generated map and injects it inline so its paths are styleable. */
 async function loadMap() {
   try {
-    const res = await fetch('data/world.svg');
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-
-    el.map.innerHTML = await res.text();
+    // A single-file build ships the map already inlined; nothing to fetch.
+    if (!el.map.querySelector('svg')) {
+      const res = await fetch('data/world.svg');
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      el.map.innerHTML = await res.text();
+    }
     el.map.dataset.state = 'ready';
 
     const svg = el.map.querySelector('svg');
