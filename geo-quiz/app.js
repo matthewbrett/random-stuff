@@ -1,0 +1,587 @@
+/**
+ * Geo Quiz
+ *
+ * See docs/PLAN.md. Notable constraint: this runs inside sandboxed iframes (the preview
+ * build), where window.confirm() is ignored and native form submission is blocked. Both
+ * are avoided deliberately — see ask() and the Enter handler.
+ */
+
+import { COUNTRIES, CONTINENTS } from './data/countries.js';
+import { evaluate } from './match.js';
+
+const MODES = {
+  countries: {
+    placeholder: 'Name a country…',
+    label: 'Enter a country name',
+    entry: (country) => country.name,
+  },
+  capitals: {
+    placeholder: 'Name a capital…',
+    label: 'Enter a capital city name',
+    entry: (country) => `${country.capitals[0]} — ${country.name}`,
+  },
+};
+
+/** Map coordinate space, fixed by the generator. */
+const BASE = { w: 2000, h: 1000 };
+const MAX_ZOOM = 16;
+
+/** idle -> running (first keystroke) -> finished (all found, or gave up). */
+const state = {
+  mode: 'countries',
+  scope: '', // '' is the whole world, otherwise a continent name
+  status: 'idle',
+  found: new Set(),
+  startedAt: null,
+  elapsedMs: 0,
+};
+
+const view = { x: 0, y: 0, w: BASE.w, h: BASE.h };
+
+let ticker = null;
+let svg = null;
+/** Pin tip positions, parsed once so zoom can counter-scale them. */
+let pins = [];
+
+const el = {
+  map: document.getElementById('map'),
+  entry: document.getElementById('entry'),
+  answer: document.getElementById('answer'),
+  giveUp: document.getElementById('give-up'),
+  timer: document.getElementById('timer'),
+  scope: document.getElementById('scope'),
+  listTitle: document.getElementById('list-title'),
+  count: document.getElementById('count'),
+  total: document.getElementById('total'),
+  breakdown: document.getElementById('breakdown'),
+  answers: document.getElementById('answers'),
+  listEmpty: document.getElementById('list-empty'),
+  status: document.getElementById('status'),
+  modes: document.querySelectorAll('.mode'),
+  ask: document.getElementById('ask'),
+  askText: document.getElementById('ask-text'),
+  askYes: document.getElementById('ask-yes'),
+  askNo: document.getElementById('ask-no'),
+  zoomIn: document.getElementById('zoom-in'),
+  zoomOut: document.getElementById('zoom-out'),
+  zoomReset: document.getElementById('zoom-reset'),
+};
+
+// --- Scope --------------------------------------------------------------------------
+
+const inScope = (country) => !state.scope || country.continent === state.scope;
+const active = () => COUNTRIES.filter(inScope);
+
+// --- Confirmation -------------------------------------------------------------------
+
+/**
+ * Stands in for window.confirm(), which a sandboxed frame ignores outright — it returns
+ * false without ever showing anything, which silently swallowed Give up in the preview
+ * build. <dialog>.showModal() is not covered by the sandbox modal restriction.
+ */
+function ask(question) {
+  return new Promise((resolve) => {
+    el.askText.textContent = question;
+
+    const close = (answer) => {
+      el.ask.close();
+      el.askYes.removeEventListener('click', yes);
+      el.askNo.removeEventListener('click', no);
+      el.ask.removeEventListener('cancel', no);
+      resolve(answer);
+    };
+    const yes = () => close(true);
+    const no = () => close(false);
+
+    el.askYes.addEventListener('click', yes);
+    el.askNo.addEventListener('click', no);
+    el.ask.addEventListener('cancel', no); // Esc
+    el.ask.showModal();
+    el.askNo.focus();
+  });
+}
+
+// --- Map ----------------------------------------------------------------------------
+
+async function loadMap() {
+  try {
+    // A single-file build ships the map already inlined; nothing to fetch.
+    if (!el.map.querySelector('svg')) {
+      const res = await fetch('data/world.svg');
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      el.map.innerHTML = await res.text();
+    }
+    el.map.dataset.state = 'ready';
+
+    svg = el.map.querySelector('svg');
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'World map');
+
+    pins = [...svg.querySelectorAll('#markers > g')].map((node) => {
+      const [x, y] = node.getAttribute('transform').match(/-?[\d.]+/g).map(Number);
+      return { node, x, y };
+    });
+
+    applyView();
+    enablePanZoom();
+    return true;
+  } catch (err) {
+    el.map.dataset.state = 'error';
+    el.map.innerHTML =
+      `<p class="map-message">Could not load the map (${escapeHtml(err.message)}).<br><br>` +
+      `If you opened this file directly, serve it over HTTP instead: ` +
+      `<code>npm run serve</code></p>`;
+    return false;
+  }
+}
+
+/** Pushes the current view to the SVG and keeps pins a constant size on screen. */
+function applyView() {
+  if (!svg) return;
+  svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
+
+  // Pins are drawn in map units, so without this they would balloon as you zoom in.
+  // Scaling about the tip (their transform origin) keeps them pointing at the same spot.
+  const scale = view.w / BASE.w;
+  for (const pin of pins) {
+    pin.node.setAttribute('transform', `translate(${pin.x},${pin.y}) scale(${scale})`);
+  }
+  el.map.classList.toggle('is-zoomed', view.w < BASE.w);
+}
+
+function clampView() {
+  view.w = Math.min(BASE.w, Math.max(BASE.w / MAX_ZOOM, view.w));
+  view.h = view.w / 2;
+  view.x = Math.min(BASE.w - view.w, Math.max(0, view.x));
+  view.y = Math.min(BASE.h - view.h, Math.max(0, view.y));
+}
+
+/** Zooms by `factor` about a fixed point given in map coordinates. */
+function zoomAbout(factor, fx, fy) {
+  const before = view.w;
+  view.w = view.w * factor;
+  clampView();
+  const ratio = view.w / before;
+
+  view.x = fx - (fx - view.x) * ratio;
+  view.y = fy - (fy - view.y) * ratio;
+  clampView();
+  applyView();
+}
+
+/** Screen coordinates -> map coordinates. */
+function toMap(event) {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: view.x + view.w / 2, y: view.y + view.h / 2 };
+  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(ctm.inverse());
+  return { x: point.x, y: point.y };
+}
+
+function enablePanZoom() {
+  // Non-passive so the page itself never scrolls or zooms underneath the map.
+  el.map.addEventListener(
+    'wheel',
+    (event) => {
+      event.preventDefault();
+      const at = toMap(event);
+      zoomAbout(event.deltaY > 0 ? 1.2 : 1 / 1.2, at.x, at.y);
+    },
+    { passive: false }
+  );
+
+  let dragging = null;
+  el.map.addEventListener('pointerdown', (event) => {
+    if (view.w >= BASE.w) return; // nothing to pan while fully zoomed out
+    dragging = { ...toMap(event), id: event.pointerId };
+    el.map.setPointerCapture(event.pointerId);
+    el.map.classList.add('is-panning');
+  });
+
+  el.map.addEventListener('pointermove', (event) => {
+    if (!dragging) return;
+    const at = toMap(event);
+    view.x += dragging.x - at.x;
+    view.y += dragging.y - at.y;
+    clampView();
+    applyView();
+  });
+
+  const endDrag = (event) => {
+    if (!dragging) return;
+    el.map.releasePointerCapture(dragging.id);
+    dragging = null;
+    el.map.classList.remove('is-panning');
+  };
+  el.map.addEventListener('pointerup', endDrag);
+  el.map.addEventListener('pointercancel', endDrag);
+
+  el.map.addEventListener('dblclick', () => resetView());
+}
+
+function resetView() {
+  view.x = 0;
+  view.y = 0;
+  view.w = BASE.w;
+  view.h = BASE.h;
+  applyView();
+}
+
+// --- Painting -----------------------------------------------------------------------
+
+/** A country is up to three elements: its shape, and for micro-states a pin and leader. */
+function paint(m49, className) {
+  for (const prefix of ['c', 'm', 'l']) {
+    document.getElementById(prefix + m49)?.classList.add(className);
+  }
+}
+
+function repaintScope() {
+  for (const c of COUNTRIES) {
+    for (const prefix of ['c', 'm', 'l']) {
+      document.getElementById(prefix + c.m49)?.classList.toggle('out-of-scope', !inScope(c));
+    }
+  }
+}
+
+function clearPaint() {
+  for (const node of el.map.querySelectorAll('.found, .missed')) {
+    node.classList.remove('found', 'missed');
+  }
+}
+
+// --- Answer list --------------------------------------------------------------------
+
+function answerRow(country, missed = false) {
+  const li = document.createElement('li');
+  li.className = missed ? 'answer-row is-missed' : 'answer-row';
+  li.id = `row-${country.m49}`;
+
+  const mark = document.createElement('span');
+  mark.className = 'mark';
+  mark.textContent = missed ? '✗' : '✓';
+  mark.setAttribute('aria-hidden', 'true');
+
+  const label = document.createElement('span');
+  label.className = 'label';
+  label.textContent = MODES[state.mode].entry(country);
+
+  li.append(mark, label);
+  return li;
+}
+
+function groupRow(text) {
+  const li = document.createElement('li');
+  li.className = 'answer-group';
+  li.textContent = text;
+  return li;
+}
+
+function flashAnswer(m49) {
+  const row = document.getElementById(`row-${m49}`);
+  if (!row) return;
+  row.classList.remove('flash');
+  void row.offsetWidth; // restart the animation
+  row.classList.add('flash');
+  row.scrollIntoView({ block: 'nearest' });
+}
+
+/** Per-continent progress, so you can see which region is letting you down. */
+function renderBreakdown() {
+  // Playing a single continent, this would just restate the header count.
+  el.breakdown.replaceChildren();
+  if (state.scope) return;
+
+  for (const continent of CONTINENTS) {
+    const all = COUNTRIES.filter((c) => c.continent === continent);
+    const got = all.filter((c) => state.found.has(c.m49)).length;
+
+    const li = document.createElement('li');
+    li.className = 'breakdown-row' + (got === all.length ? ' is-complete' : '');
+
+    const name = document.createElement('span');
+    name.className = 'breakdown-name';
+    name.textContent = continent;
+
+    const bar = document.createElement('span');
+    bar.className = 'breakdown-bar';
+    const fill = document.createElement('span');
+    fill.style.width = `${(got / all.length) * 100}%`;
+    bar.append(fill);
+
+    const num = document.createElement('span');
+    num.className = 'breakdown-num';
+    num.textContent = `${got}/${all.length}`;
+
+    li.append(name, bar, num);
+    el.breakdown.append(li);
+  }
+}
+
+/**
+ * End-of-game list, grouped by continent — much easier to study one region at a time
+ * than to read 195 names in one alphabetical run. Found first within each group.
+ */
+function revealList() {
+  el.answers.replaceChildren();
+
+  for (const continent of CONTINENTS) {
+    const all = active().filter((c) => c.continent === continent);
+    if (!all.length) continue;
+
+    const found = all.filter((c) => state.found.has(c.m49));
+    const missed = all.filter((c) => !state.found.has(c.m49));
+
+    el.answers.append(groupRow(`${continent} — ${found.length}/${all.length}`));
+    for (const c of found) el.answers.append(answerRow(c));
+    for (const c of missed) el.answers.append(answerRow(c, true));
+  }
+  el.answers.scrollTop = 0;
+}
+
+// --- Timer --------------------------------------------------------------------------
+
+function formatTime(ms) {
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = String(m).padStart(2, '0');
+  const ss = String(s).padStart(2, '0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/** Starts on the first keystroke, not on page load, so you can study the map first. */
+function startTimer() {
+  if (state.status !== 'idle') return;
+
+  state.status = 'running';
+  state.startedAt = Date.now();
+  el.timer.classList.add('running');
+  // Recomputed from the start time rather than accumulated, so it cannot drift.
+  ticker = setInterval(() => {
+    state.elapsedMs = Date.now() - state.startedAt;
+    el.timer.textContent = formatTime(state.elapsedMs);
+  }, 250);
+}
+
+function stopTimer() {
+  clearInterval(ticker);
+  ticker = null;
+  if (state.startedAt !== null) state.elapsedMs = Date.now() - state.startedAt;
+  el.timer.textContent = formatTime(state.elapsedMs);
+  el.timer.classList.remove('running');
+}
+
+// --- Game ---------------------------------------------------------------------------
+
+function submit(raw) {
+  if (state.status === 'finished') return;
+  const result = evaluate(raw, state.mode, state.found);
+
+  switch (result.type) {
+    case 'empty':
+      return;
+
+    case 'correct':
+      // Right answer, wrong region: worth saying so rather than calling it unknown.
+      if (!inScope(result.country)) {
+        reject(`${result.country.name} is not in ${state.scope}.`);
+        return;
+      }
+      state.found.add(result.country.m49);
+      paint(result.country.m49, 'found');
+      el.answers.prepend(answerRow(result.country)); // newest first while playing
+      render();
+      say(`${result.country.name} ✓`);
+      el.answer.value = ''; // only a correct answer clears the box
+      if (state.found.size === active().length) finish(true);
+      return;
+
+    case 'duplicate':
+      flashAnswer(result.country.m49);
+      say(`Already found ${result.country.name}.`);
+      el.answer.select();
+      return;
+
+    case 'ambiguous':
+    case 'rejected':
+    case 'wrong-mode':
+      reject(result.message);
+      return;
+
+    case 'near-miss':
+      reject('Close — check your spelling.');
+      return;
+
+    default:
+      reject('Not recognised.');
+  }
+}
+
+/**
+ * Wrong answers keep the text in the box. With strict matching that is the only way to
+ * fix a near-miss spelling without retyping the whole name.
+ */
+let shakeTimer = null;
+
+function reject(message) {
+  say(message);
+  el.answer.classList.remove('shake');
+  void el.answer.offsetWidth; // restart the animation
+  el.answer.classList.add('shake');
+
+  // The class carries a red border as well as the animation, so it has to come off
+  // again or the box stays red for the rest of the game. Driven by a timer rather than
+  // animationend, which never fires under prefers-reduced-motion.
+  clearTimeout(shakeTimer);
+  shakeTimer = setTimeout(() => el.answer.classList.remove('shake'), 400);
+}
+
+function finish(won) {
+  if (state.status === 'finished') return;
+
+  stopTimer();
+  state.status = 'finished';
+
+  for (const c of active()) {
+    if (!state.found.has(c.m49)) paint(c.m49, 'missed');
+  }
+  revealList();
+  render();
+
+  const total = active().length;
+  const where = state.scope || 'the world';
+  const time = formatTime(state.elapsedMs);
+  say(
+    won
+      ? `All ${total} of ${where} in ${time}. Every last one.`
+      : `${state.found.size} of ${total} in ${time}. The rest are shown in red.`
+  );
+}
+
+function say(message) {
+  el.status.textContent = message;
+}
+
+function render() {
+  const finished = state.status === 'finished';
+
+  el.count.textContent = String(state.found.size);
+  el.total.textContent = String(active().length);
+  el.listTitle.textContent = finished ? 'Result' : 'Found';
+  el.listEmpty.hidden = state.found.size > 0 || finished;
+
+  el.answer.disabled = finished;
+  el.giveUp.textContent = finished ? 'Play again' : 'Give up';
+  el.giveUp.classList.toggle('is-primary', finished);
+  // Nothing to give up on before the first keystroke.
+  el.giveUp.disabled = state.status === 'idle';
+
+  renderBreakdown();
+}
+
+function reset() {
+  stopTimer();
+  state.status = 'idle';
+  state.found.clear();
+  state.startedAt = null;
+  state.elapsedMs = 0;
+
+  clearPaint();
+  repaintScope();
+  el.answers.replaceChildren();
+  el.answer.value = '';
+  el.timer.textContent = formatTime(0);
+  render();
+  say('');
+  el.answer.focus();
+}
+
+/** Any change that alters the answer set has to start a fresh game. */
+async function change(apply) {
+  if (state.status === 'running' && !(await ask('This starts a new game. Continue?'))) {
+    return false;
+  }
+  apply();
+  reset();
+  return true;
+}
+
+function setMode(mode) {
+  if (!MODES[mode] || mode === state.mode) return;
+  change(() => {
+    state.mode = mode;
+    for (const button of el.modes) {
+      button.setAttribute('aria-selected', String(button.dataset.mode === mode));
+    }
+    el.answer.placeholder = MODES[mode].placeholder;
+    el.answer.setAttribute('aria-label', MODES[mode].label);
+  });
+}
+
+async function setScope(scope) {
+  if (scope === state.scope) return;
+  const ok = await change(() => {
+    state.scope = scope;
+  });
+  if (!ok) el.scope.value = state.scope; // put the select back
+}
+
+function escapeHtml(s) {
+  return String(s).replace(
+    /[&<>"]/g,
+    (c) => `&${{ '&': 'amp', '<': 'lt', '>': 'gt', '"': 'quot' }[c]};`
+  );
+}
+
+// --- Wire up ------------------------------------------------------------------------
+
+for (const continent of CONTINENTS) {
+  const option = document.createElement('option');
+  option.value = continent;
+  option.textContent = `${continent} (${COUNTRIES.filter((c) => c.continent === continent).length})`;
+  el.scope.append(option);
+}
+
+for (const button of el.modes) {
+  button.addEventListener('click', () => setMode(button.dataset.mode));
+}
+
+el.scope.addEventListener('change', () => setScope(el.scope.value));
+
+// Enter is handled on keydown rather than via form submission: sandboxed frames block
+// native submission outright, which would make the game unplayable in the preview build.
+el.answer.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  submit(el.answer.value);
+});
+
+el.entry.addEventListener('submit', (event) => event.preventDefault());
+
+el.answer.addEventListener('input', () => {
+  if (el.answer.value) startTimer();
+  render();
+});
+
+el.giveUp.addEventListener('click', async () => {
+  if (state.status === 'finished') {
+    reset();
+    return;
+  }
+  if (await ask('End the game and reveal the countries you missed?')) finish(false);
+});
+
+el.zoomIn.addEventListener('click', () => zoomAbout(1 / 1.4, view.x + view.w / 2, view.y + view.h / 2));
+el.zoomOut.addEventListener('click', () => zoomAbout(1.4, view.x + view.w / 2, view.y + view.h / 2));
+el.zoomReset.addEventListener('click', resetView);
+
+render();
+
+loadMap().then((ok) => {
+  if (!ok) return;
+  repaintScope();
+  el.answer.disabled = false;
+  el.answer.focus();
+});

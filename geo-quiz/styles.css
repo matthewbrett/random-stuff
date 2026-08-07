@@ -1,0 +1,641 @@
+/* Geo Quiz — desktop-first. */
+
+:root {
+  --bg: #0f172a;
+  --panel: #16233c;
+  --panel-edge: #24344f;
+  --ocean: #0f172a;
+
+  /* Map states. Applied as classes, never by id — see the specificity note below. */
+  --land-inert: #1e293b;   /* territories and disputed areas; never playable */
+  --land: #475569;         /* a country you have not named yet */
+  --land-found: #22c55e;
+  --land-missed: #ef4444;
+  --border: #0f172a;
+
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #667eea;
+
+  --nav-height: 60px;
+  --entry-height: 76px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  /* Pin the app to exactly one viewport so the map shrinks to fit rather than pushing
+     the input and status bar below the fold on short screens. The mobile breakpoint
+     hands scrolling back. */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- Nav ------------------------------------------------------------------------ */
+
+.nav {
+  height: var(--nav-height);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+.brand {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.modes {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+
+.mode {
+  padding: 6px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode:hover {
+  color: var(--text);
+}
+
+.mode[aria-selected='true'] {
+  background: var(--accent);
+  color: #fff;
+}
+
+.scope {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scope-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.scope select {
+  padding: 6px 10px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.scope select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.timer {
+  margin-left: auto;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  transition: color 0.3s ease;
+}
+
+.timer.running {
+  color: var(--text);
+}
+
+/* --- Layout --------------------------------------------------------------------- */
+
+.layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+}
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.map-panel {
+  position: relative;
+}
+
+.map {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none; /* the map handles its own pinch and drag */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  background: var(--ocean);
+}
+
+.map svg {
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
+  display: block;
+}
+
+.map-message {
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: center;
+  max-width: 42ch;
+  line-height: 1.6;
+}
+
+.map[data-state='error'] .map-message {
+  color: #fca5a5;
+}
+
+.map-message code {
+  color: var(--text);
+  background: var(--panel);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+.map.is-zoomed { cursor: grab; }
+.map.is-panning { cursor: grabbing; }
+
+/* --- Zoom controls -------------------------------------------------------------- */
+
+.zoom {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: rgba(22, 35, 60, 0.85);
+  backdrop-filter: blur(4px);
+}
+
+.zoom button {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.zoom button:hover {
+  background: var(--panel-edge);
+  color: var(--text);
+}
+
+.zoom button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* --- Map colours ---------------------------------------------------------------- */
+
+/* Specificity note: `#countries path` (0,1,1) outranks a bare `#c250` (0,1,0), so game
+   state MUST be set with a class on the element, not by styling its id. */
+
+/* non-scaling-stroke keeps borders hairline-thin at every zoom level. */
+#other path {
+  fill: var(--land-inert);
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+#countries path {
+  fill: var(--land);
+  stroke: var(--border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.25s ease;
+}
+
+/* Playing one continent: everything else recedes but stays visible for orientation. */
+#countries path.out-of-scope,
+#markers .out-of-scope path {
+  fill: var(--land-inert);
+}
+
+#leaders line.out-of-scope {
+  stroke: var(--land-inert);
+}
+
+#markers path {
+  fill: var(--land);
+  stroke: var(--border);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  transition: fill 0.25s ease;
+}
+
+#leaders line {
+  stroke: var(--land);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.8;
+  transition: stroke 0.25s ease;
+}
+
+#countries path.found { fill: var(--land-found); }
+#markers .found path  { fill: var(--land-found); }
+#leaders line.found   { stroke: var(--land-found); }
+
+#countries path.missed { fill: var(--land-missed); }
+#markers .missed path  { fill: var(--land-missed); }
+#leaders line.missed   { stroke: var(--land-missed); }
+
+/* --- Entry ---------------------------------------------------------------------- */
+
+.entry {
+  flex: 0 0 auto;
+  height: var(--entry-height);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  background: var(--panel);
+  border-top: 1px solid var(--panel-edge);
+}
+
+.answer {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.answer::placeholder {
+  color: var(--muted);
+}
+
+.answer:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.answer:disabled,
+.give-up:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.give-up {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.give-up:not(:disabled):hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+/* Once the game is over, restarting is the main thing you want to do. */
+.give-up.is-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.give-up.is-primary:hover {
+  filter: brightness(1.1);
+  color: #fff;
+}
+
+/* --- List ----------------------------------------------------------------------- */
+
+.list-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--panel-edge);
+}
+
+.list-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid var(--panel-edge);
+}
+
+.list-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.score {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.score strong {
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.answers {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  list-style: none;
+  padding: 8px 0;
+}
+
+.answer-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 18px;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+/* Never rely on colour alone -- the glyph carries the same meaning for anyone who
+   cannot separate the green from the red. */
+.mark {
+  flex: 0 0 auto;
+  font-size: 0.85rem;
+  color: var(--land-found);
+}
+
+.answer-row.is-missed .mark {
+  color: var(--land-missed);
+}
+
+.answer-row.is-missed .label {
+  color: var(--muted);
+}
+
+.answer-group {
+  position: sticky;
+  top: 0;
+  padding: 12px 18px 6px;
+  background: var(--panel);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.answer-group:first-child {
+  padding-top: 4px;
+}
+
+@keyframes flash {
+  0%, 100% { background: transparent; }
+  25%      { background: rgba(102, 126, 234, 0.28); }
+}
+
+.answer-row.flash {
+  animation: flash 0.6s ease;
+}
+
+@keyframes shake {
+  0%, 100%    { transform: translateX(0); }
+  20%, 60%    { transform: translateX(-4px); }
+  40%, 80%    { transform: translateX(4px); }
+}
+
+.answer.shake {
+  animation: shake 0.28s ease;
+  border-color: var(--land-missed);
+}
+
+/* --- Continent breakdown -------------------------------------------------------- */
+
+.breakdown {
+  flex: 0 0 auto;
+  list-style: none;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--panel-edge);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.breakdown:empty {
+  display: none;
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 1fr 52px auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.breakdown-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.breakdown-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--land-found);
+  transition: width 0.3s ease;
+}
+
+.breakdown-num {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+}
+
+.breakdown-row.is-complete .breakdown-name,
+.breakdown-row.is-complete .breakdown-num {
+  color: var(--land-found);
+}
+
+.list-empty {
+  flex: 0 0 auto;
+  padding: 16px 18px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* --- Status --------------------------------------------------------------------- */
+
+.status {
+  flex: 0 0 auto;
+  padding: 8px 20px;
+  min-height: 34px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--bg);
+  border-top: 1px solid var(--panel-edge);
+}
+
+/* --- Confirmation dialog -------------------------------------------------------- */
+
+.ask {
+  margin: auto;
+  max-width: 380px;
+  padding: 22px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.ask::backdrop {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.ask-text {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.ask-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ask-buttons button {
+  padding: 9px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-edge);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.ask-no {
+  background: transparent;
+  color: var(--muted);
+}
+
+.ask-no:hover {
+  color: var(--text);
+}
+
+.ask-yes {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.ask-buttons button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- Responsive ----------------------------------------------------------------- */
+
+/* Desktop-first: the game is typing 195 names, so a keyboard is assumed. Below this the
+   layout stacks so it is at least usable, but it is not the target. */
+@media (max-width: 900px) {
+  /* Stacked layout is taller than the viewport by design, so let the page scroll again. */
+  body {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: auto;
+  }
+
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+    /* Without this, leftover space from body's min-height is shared out between the two
+       auto rows (grid's default align-content is stretch), which re-inflates the map. */
+    align-content: start;
+  }
+
+  /* Let the map's own 2:1 aspect set its height. A fixed min-height just letterboxes it
+     and wastes a third of a phone screen. */
+  .map {
+    min-height: auto;
+    padding: 8px;
+  }
+
+  .list-panel {
+    border-left: 0;
+    border-top: 1px solid var(--panel-edge);
+    max-height: 40vh;
+  }
+
+  .nav {
+    gap: 12px;
+    padding: 0 12px;
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

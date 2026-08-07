@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Geo Quiz</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%23667eea'/><path d='M8 1a7 7 0 000 14M1 8h14M3 4.5h10M3 11.5h10' stroke='%23fff' stroke-width='1' fill='none'/></svg>">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <h1 class="brand">Geo Quiz</h1>
+
+    <div class="modes" role="tablist" aria-label="Game mode">
+      <button type="button" role="tab" class="mode" data-mode="countries" aria-selected="true">Countries</button>
+      <button type="button" role="tab" class="mode" data-mode="capitals" aria-selected="false">Capitals</button>
+    </div>
+
+    <label class="scope">
+      <span class="scope-label">Region</span>
+      <select id="scope" aria-label="Which countries to play">
+        <option value="">Whole world</option>
+      </select>
+    </label>
+
+    <div class="timer" id="timer" aria-label="Elapsed time">00:00</div>
+  </header>
+
+  <main class="layout">
+    <section class="map-panel" aria-label="World map">
+      <div class="map" id="map" data-state="loading">
+        <p class="map-message">Loading map…</p>
+      </div>
+
+      <div class="zoom" role="group" aria-label="Map zoom">
+        <button type="button" id="zoom-in" title="Zoom in">+</button>
+        <button type="button" id="zoom-out" title="Zoom out">−</button>
+        <button type="button" id="zoom-reset" title="Reset view">Reset</button>
+      </div>
+
+      <form class="entry" id="entry" autocomplete="off">
+        <input
+          type="text"
+          id="answer"
+          class="answer"
+          placeholder="Name a country…"
+          aria-label="Enter a country name"
+          spellcheck="false"
+          autocapitalize="off">
+        <button type="button" class="give-up" id="give-up" disabled>Give up</button>
+      </form>
+    </section>
+
+    <aside class="list-panel" aria-label="Your answers">
+      <header class="list-header">
+        <span class="list-title" id="list-title">Found</span>
+        <span class="score"><strong id="count">0</strong> / <span id="total">195</span></span>
+      </header>
+      <ul class="breakdown" id="breakdown" aria-label="Progress by continent"></ul>
+      <p class="list-empty" id="list-empty">Nothing yet.</p>
+      <ol class="answers" id="answers"></ol>
+    </aside>
+  </main>
+
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+
+  <!--
+    A real <dialog>, not window.confirm(). Sandboxed frames without allow-modals ignore
+    confirm() and hand back false, which silently swallowed the whole Give up action.
+  -->
+  <dialog class="ask" id="ask">
+    <p class="ask-text" id="ask-text"></p>
+    <div class="ask-buttons">
+      <button type="button" class="ask-no" id="ask-no">Cancel</button>
+      <button type="button" class="ask-yes" id="ask-yes">Confirm</button>
+    </div>
+  </dialog>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
