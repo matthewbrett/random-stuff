@@ -28,6 +28,23 @@ A simple, elegant clock web app that displays the current time and lets you mark
   - Delete marks individually
   - Mobile responsive design
 
+### 🌍 Geo Quiz
+A geography game: name all 195 countries or their capitals from memory, against the clock. **[PLAYABLE]**
+
+- **Location:** `/geo-quiz/`
+- **Status:** Playable end to end; polish ongoing
+- **Play:** https://matthewbrett.github.io/random-stuff/geo-quiz/
+- **Tech:** Vanilla HTML/CSS/JS, no build step and no runtime dependencies
+- **Features:**
+  - Two modes — name countries, or name capitals
+  - World map with per-country borders; correct answers fill green, missed ones red
+  - Map pins for the 34 countries too small to see at world scale
+  - Strict matching with common abbreviations (`USA`, `UK`, `UAE`) and spelling hints
+  - Timer, give up and full reveal of what you missed
+  - Play the whole world or scope to one of six continents
+  - Pan and zoom the map without zooming the page
+- **Docs:** [geo-quiz/docs/PLAN.md](geo-quiz/docs/PLAN.md)
+
 ## Repository Documentation
 
 - **[AGENTS.md](AGENTS.md)** - Repository guidelines and coding conventions for AI agents
@@ -52,4 +69,4 @@ npm install
 npm run dev  # Start dev server at http://localhost:3001
 ```
 
-**Last Updated:** 2026-02-23
+**Last Updated:** 2026-08-07

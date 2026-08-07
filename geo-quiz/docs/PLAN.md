@@ -4,9 +4,9 @@ A front-end-only web game for learning the world's countries and their capitals.
 You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
-**Status:** Phases 0–3 complete — the game is fully playable end to end. Remaining work
-is polish (Phase 5) and docs/deploy (Phase 6).
-**Last Updated:** 2026-08-06
+**Status:** Complete and wired into the deploy pipeline. Publishes to
+`/random-stuff/geo-quiz/` on merge to `main`.
+**Last Updated:** 2026-08-07
 
 ---
 
@@ -377,8 +377,8 @@ one is that?" in both directions.
 | **2** ✓ | Input + matching engine + green fill + list + counter |
 | **3** ✓ | Timer, win detection, Give up, red reveal of missing |
 | **4** ✓ | Capitals mode + mode switch *(landed with Phase 2 — both modes share one index)* |
-| **5** | Micro-state markers, map↔list cross-highlight, a11y pass, mobile, reduced motion |
-| **6** | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
+| **5** ◐ | Micro-state pins ✓, zoom/pan ✓, continent scoping ✓, reduced motion ✓. Map↔list cross-highlight still outstanding |
+| **6** ✓ | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 
 Phase 0 is complete (§3). Phase 1 is complete: `index.html`, `styles.css` and `app.js`
 render the nav, the neutral map and the (inert) entry and list panels.

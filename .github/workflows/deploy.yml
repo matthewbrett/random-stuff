@@ -45,6 +45,14 @@ jobs:
           cp -r brickwave/dist deploy/brickwave
           # Copy time-marker (no build needed - single HTML file)
           cp -r time-marker deploy/time-marker
+          # Copy geo-quiz (no build needed - map and answer data are committed)
+          cp -r geo-quiz deploy/geo-quiz
+          # Drop the dev-only tooling from the published copy. node_modules is gitignored
+          # so a clean checkout has none, but exclude it explicitly rather than rely on
+          # that -- it is 50MB if it ever does turn up.
+          rm -rf deploy/geo-quiz/tools deploy/geo-quiz/docs deploy/geo-quiz/node_modules \
+                 deploy/geo-quiz/package.json deploy/geo-quiz/package-lock.json \
+                 deploy/geo-quiz/.gitignore
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
