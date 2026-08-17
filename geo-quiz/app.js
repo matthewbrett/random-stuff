@@ -30,6 +30,7 @@ const MAX_ZOOM = 16;
 const state = {
   mode: 'countries',
   scope: '', // '' is the whole world, otherwise a continent name
+  learning: false, // untimed, and the map will name a country you ask it about
   status: 'idle',
   found: new Set(),
   startedAt: null,
@@ -50,6 +51,8 @@ let highlight = null;
 let highlighted = '';
 /** The list row tied to the outlined country, so it can be un-tied again. */
 let linkedRow = null;
+/** m49 of a country named because you clicked it, which a hover must not undo. */
+let revealed = '';
 let tipTimer = null;
 
 const el = {
@@ -59,6 +62,7 @@ const el = {
   entry: document.getElementById('entry'),
   answer: document.getElementById('answer'),
   giveUp: document.getElementById('give-up'),
+  learn: document.getElementById('learn'),
   timer: document.getElementById('timer'),
   scope: document.getElementById('scope'),
   listTitle: document.getElementById('list-title'),
@@ -279,21 +283,30 @@ function clearPaint() {
 
 const BY_M49 = new Map(COUNTRIES.map((c) => [c.m49, c]));
 
+/** The country behind a map element -- null for ocean and for inert territories. */
+function countryAt(node) {
+  const owner = node?.closest?.('#countries path, #markers g[id], #leaders line');
+  return (owner && BY_M49.get(owner.id.slice(1))) || null;
+}
+
 /**
- * Which countries will give up their name. Not the ones you have yet to find: sweeping
+ * Whether a country will give up its name. Not the ones you have yet to find: sweeping
  * the pointer over Europe would otherwise read out the answer sheet. Out-of-scope
  * countries are never answers, so they name themselves freely and help you get your
  * bearings while playing a single continent.
+ *
+ * `asked` marks a deliberate click rather than a pointer passing over. In learning mode
+ * that is enough to name anything -- you have to ask for an answer, and asking is the
+ * whole point of the mode.
  */
-function identifiable(country) {
-  return !inScope(country) || state.status === 'finished' || state.found.has(country.m49);
-}
-
-/** The country behind a map element -- null for ocean, territories and unfound land. */
-function countryAt(node) {
-  const owner = node?.closest?.('#countries path, #markers g[id], #leaders line');
-  const country = owner && BY_M49.get(owner.id.slice(1));
-  return country && identifiable(country) ? country : null;
+function names(country, asked = false) {
+  if (!country) return false;
+  return (
+    !inScope(country) ||
+    state.status === 'finished' ||
+    state.found.has(country.m49) ||
+    (asked && state.learning)
+  );
 }
 
 /** Outlines a country on the map: its shape, and for a micro-state its pin and leader. */
@@ -368,6 +381,7 @@ function identify(country, event) {
 
 function clearIdentify() {
   clearTimeout(tipTimer);
+  revealed = '';
   setHighlight('');
   linkRow('');
   hideTip();
@@ -404,7 +418,16 @@ function enableIdentify() {
       clearIdentify();
       return;
     }
-    identify(countryAt(event.target), event);
+
+    const country = countryAt(event.target);
+    // A name you asked for stays up until you leave that country -- otherwise the first
+    // twitch of the mouse after the click would wipe it.
+    if (country && country.m49 === revealed) {
+      identify(country, event);
+      return;
+    }
+    revealed = '';
+    identify(names(country) ? country : null, event);
   });
 
   el.map.addEventListener('pointerleave', clearIdentify);
@@ -422,15 +445,17 @@ function enableIdentify() {
     tapFrom = null;
     if (!from || Math.hypot(event.clientX - from.x, event.clientY - from.y) > 6) return;
 
-    const country = countryAt(document.elementFromPoint(event.clientX, event.clientY));
+    const at = countryAt(document.elementFromPoint(event.clientX, event.clientY));
+    const country = names(at, true) ? at : null;
     identify(country, event);
+    if (country) {
+      revealed = country.m49;
+      say(MODES[state.mode].entry(country)); // you asked, so it is worth announcing
+    }
 
     clearTimeout(tipTimer);
-    if (event.pointerType !== 'mouse') {
-      // No pointer to move away, so the name has to time itself out.
-      if (country) say(MODES[state.mode].entry(country));
-      tipTimer = setTimeout(clearIdentify, 3000);
-    }
+    // Touch has no pointer to move away, so the name has to time itself out.
+    if (country && event.pointerType !== 'mouse') tipTimer = setTimeout(clearIdentify, 3000);
   });
 }
 
@@ -544,11 +569,17 @@ function formatTime(ms) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 }
 
-/** Starts on the first keystroke, not on page load, so you can study the map first. */
-function startTimer() {
+/**
+ * The run starts on the first keystroke, not on page load, so you can study the map
+ * first. Learning mode is untimed: the run still starts, but the clock stays dark --
+ * a number you are not being measured against is just something to feel bad about.
+ */
+function startRun() {
   if (state.status !== 'idle') return;
 
   state.status = 'running';
+  if (state.learning) return;
+
   state.startedAt = Date.now();
   el.timer.classList.add('running');
   // Recomputed from the start time rather than accumulated, so it cannot drift.
@@ -645,11 +676,11 @@ function finish(won) {
 
   const total = active().length;
   const where = state.scope || 'the world';
-  const time = formatTime(state.elapsedMs);
+  const time = state.learning ? '' : ` in ${formatTime(state.elapsedMs)}`;
   say(
     won
-      ? `All ${total} of ${where} in ${time}. Every last one.`
-      : `${state.found.size} of ${total} in ${time}. The rest are shown in red.`
+      ? `All ${total} of ${where}${time}. Every last one.`
+      : `${state.found.size} of ${total}${time}. The rest are shown in red.`
   );
 }
 
@@ -664,6 +695,10 @@ function render() {
   el.total.textContent = String(active().length);
   el.listTitle.textContent = finished ? 'Result' : 'Found';
   el.listEmpty.hidden = state.found.size > 0 || finished;
+
+  el.learn.setAttribute('aria-pressed', String(state.learning));
+  el.timer.classList.toggle('is-off', state.learning);
+  el.timer.setAttribute('aria-label', state.learning ? 'Timer off in learning mode' : 'Elapsed time');
 
   el.answer.disabled = finished;
   el.giveUp.textContent = finished ? 'Play again' : 'Give up';
@@ -714,6 +749,19 @@ function setMode(mode) {
   });
 }
 
+/**
+ * Learning mode is a setting, not a game state: it survives Play again, and turning it
+ * on or off starts a fresh game like any other change to what is being asked of you.
+ */
+async function setLearning(on) {
+  if (on === state.learning) return;
+  const ok = await change(() => {
+    state.learning = on;
+  });
+  // reset() has just cleared the status line, so the hint goes in after it.
+  if (ok && on) say('Learning mode. The clock is off, and clicking a country names it.');
+}
+
 async function setScope(scope) {
   if (scope === state.scope) return;
   const ok = await change(() => {
@@ -744,6 +792,8 @@ for (const button of el.modes) {
 
 el.scope.addEventListener('change', () => setScope(el.scope.value));
 
+el.learn.addEventListener('click', () => setLearning(!state.learning));
+
 // Enter is handled on keydown rather than via form submission: sandboxed frames block
 // native submission outright, which would make the game unplayable in the preview build.
 el.answer.addEventListener('keydown', (event) => {
@@ -755,7 +805,7 @@ el.answer.addEventListener('keydown', (event) => {
 el.entry.addEventListener('submit', (event) => event.preventDefault());
 
 el.answer.addEventListener('input', () => {
-  if (el.answer.value) startTimer();
+  if (el.answer.value) startRun();
   render();
 });
 

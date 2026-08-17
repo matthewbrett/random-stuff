@@ -20,6 +20,17 @@ you it is a spelling problem rather than just rejecting the answer.
 Use **Region** to play one continent at a time instead of all 195. The map scrolls to
 zoom and drags to pan; **Reset** or a double-click returns to the whole world.
 
+### Learning mode
+
+The **Learn** toggle in the nav turns the quiz into something you can browse. The clock
+greys out and stops being kept, and clicking any country — found or not — names it.
+Hovering still only names what you have found, so a pointer crossing the map never gives
+anything away: a reveal is something you ask for. Revealed countries do not score, do not
+turn green and do not join the list; typing the name still does all three, so the counter
+keeps meaning what it says. Switching the toggle starts a fresh game.
+
+## Linking the map to the answers
+
 The map and the answer list are linked in both directions. Point at a country you have
 already found and it names itself; hover a name in the list and it is outlined on the
 map; click that name and the map travels to it. Countries you have *not* yet found stay

@@ -120,6 +120,35 @@ body {
   outline-offset: 1px;
 }
 
+/* A toggle, not a tab: learning mode is orthogonal to countries/capitals -- you can
+   learn either -- so it reads as its own switch rather than a third mode. */
+.learn {
+  padding: 6px 14px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.learn:hover {
+  color: var(--text);
+}
+
+.learn[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.learn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .timer {
   margin-left: auto;
   font-size: 1.25rem;
@@ -131,6 +160,12 @@ body {
 
 .timer.running {
   color: var(--text);
+}
+
+/* Learning mode does not use the clock. Dimmed rather than removed, so the layout does
+   not jump and it is obvious which thing has been switched off. */
+.timer.is-off {
+  opacity: 0.3;
 }
 
 /* --- Layout --------------------------------------------------------------------- */
@@ -674,9 +709,13 @@ body {
     max-height: 40vh;
   }
 
+  /* One row of controls has always been tight here, and the Learn toggle no longer fits
+     at all -- the nav overflowed the page rather than wrapping. Let it wrap and grow. */
   .nav {
-    gap: 12px;
-    padding: 0 12px;
+    height: auto;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    padding: 10px 12px;
   }
 
   .brand {

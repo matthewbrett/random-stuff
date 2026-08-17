@@ -370,6 +370,26 @@ answers, so naming them costs nothing and helps you get your bearings. Once the 
 ends, everything names itself, which is the point at which a red country most needs to
 say what it was.
 
+### Learning mode
+
+A toggle in the nav, next to the clock it switches off. It is not a third tab: it is
+orthogonal to countries/capitals — you can learn either — so it reads as its own switch.
+
+- **The clock is off**, dimmed rather than removed so the layout does not jump and it is
+  obvious which thing has been disabled. The run still starts on the first keystroke; it
+  is only the timer that stays dark, and the end-of-game line reports no time.
+- **Clicking a country names it**, whether or not you have found it. Hovering still does
+  not — the split is the whole design. A pointer wandering across Europe should not
+  strip-mine the answers; a click is a question you asked, and in this mode it gets
+  answered.
+- **A reveal is not an answer.** It does not score, does not paint the country green and
+  does not join the list. Typing still does all three, so the counter keeps meaning what
+  it says.
+
+Turning it on or off starts a fresh game, like any other change to what is being asked of
+you — the same confirm as switching mode or region. It is a setting rather than a game
+state, so it survives *Play again*.
+
 ### Accessibility
 
 - Never rely on colour alone — list entries carry ✓ / ✗ glyphs, and missing countries get
@@ -391,6 +411,7 @@ say what it was.
 | **4** ✓ | Capitals mode + mode switch *(landed with Phase 2 — both modes share one index)* |
 | **5** ✓ | Micro-state pins ✓, zoom/pan ✓, continent scoping ✓, reduced motion ✓, map↔list cross-highlight ✓ |
 | **6** ✓ | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
+| **7** ✓ | Learning mode: clock off, click-to-name (§6) |
 
 Phase 0 is complete (§3). Phase 1 is complete: `index.html`, `styles.css` and `app.js`
 render the nav, the neutral map and the (inert) entry and list panels.
@@ -498,19 +519,14 @@ Held back to keep the first version small — each is easy to add later:
 - Hints, per-continent games, streaks
 - Flags mode
 - Sharing a result card
-- **Naming countries you have not found.** The map↔list link (§6) deliberately stays
-  silent on unfound countries, because free identification is free answers. But pure
-  learning — browsing the map to *read* it rather than being tested on it — is a real
-  thing to want, and the machinery is now all there. Two ways in, either of which could
-  come later:
-  - a **study mode** with no timer and no score, where every country names itself; the
-    honest framing is that it is not the same activity as the quiz, so it should not
-    share the quiz's scoreboard
-  - **reveals as a currency** during a normal game: a fixed budget of them, or one bought
-    for a time penalty. This is the more interesting design and the more delicate one —
-    it is the first thing in the game that would put a number on the clock that you did
-    not spend typing, which §9 rejected for wrong answers. A reveal is different in kind
-    from a typo, though: you are asking for an answer, not fumbling one you knew
+- **Reveals as a currency** during a *timed* game: a fixed budget of them, or one bought
+  for a time penalty. Learning mode (§6) now covers wanting to read the map rather than
+  be tested by it, and it sidesteps the pricing question by switching the clock off
+  entirely. Charging for a reveal is the harder design: it would be the first thing in
+  the game to put a number on the clock that you did not spend typing, which §9 rejected
+  for wrong answers. A reveal is different in kind from a typo — you are asking for an
+  answer, not fumbling one you knew — but it needs a sense of how the game actually
+  plays before a price can be picked
 
 ---
 
@@ -523,6 +539,7 @@ All the open questions from the first draft are now settled:
 | Timer format | `mm:ss`, rolling to `h:mm:ss` past an hour |
 | Wrong-answer penalty | None. Wasted time is the cost; penalties are a later idea |
 | Labelling missed countries | No labels. Map and list cross-highlight instead — hover names, click travels (§6) |
-| Naming unfound countries | Silent while playing, or the map is an answer sheet. Study/reveal modes are a later idea (§8) |
+| Naming unfound countries | Silent on hover, always. In learning mode a *click* names any country, because you asked (§6) |
+| Pricing a reveal | Not priced — learning mode switches the clock off instead. Reveals as a timed currency stay a later idea (§8) |
 | Matching strictness | Exact after normalisation; no fuzzy matching (§5) |
 | Alias policy | Abbreviations, English exonyms, former official names. No `America`, `Britain`, `Holland` (§5) |
