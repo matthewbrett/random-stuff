@@ -289,6 +289,44 @@ body {
 #markers .missed path  { fill: var(--land-missed); }
 #leaders line.missed   { stroke: var(--land-missed); }
 
+/* --- Identify ------------------------------------------------------------------- */
+
+/* Copies of whichever country is being pointed at, drawn last so the outline is never
+   overdrawn by a neighbour. They are copies, not the originals, so none of the rules
+   above reach them -- and they must never swallow a pointer aimed at the map beneath. */
+#highlight {
+  pointer-events: none;
+}
+
+#highlight path,
+#highlight line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.map-tip {
+  position: absolute;
+  z-index: 2;
+  transform: translate(-50%, -100%);
+  padding: 4px 10px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 6px;
+  background: rgba(22, 35, 60, 0.92);
+  backdrop-filter: blur(4px);
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  pointer-events: none; /* or it would sit between the pointer and the country */
+}
+
+.map-tip.is-below {
+  transform: translate(-50%, 0);
+}
+
 /* --- Entry ---------------------------------------------------------------------- */
 
 .entry {
@@ -410,6 +448,19 @@ body {
   padding: 5px 18px;
   font-size: 0.95rem;
   line-height: 1.35;
+  cursor: pointer; /* every row travels to its country */
+}
+
+/* Hovering a row outlines its country; the map naming a country marks its row. Both
+   directions land on the same treatment, so the pair always reads as one link. */
+.answer-row:hover,
+.answer-row.is-linked {
+  background: rgba(102, 126, 234, 0.16);
+}
+
+.answer-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 /* Never rely on colour alone -- the glyph carries the same meaning for anyone who

@@ -20,6 +20,12 @@ you it is a spelling problem rather than just rejecting the answer.
 Use **Region** to play one continent at a time instead of all 195. The map scrolls to
 zoom and drags to pan; **Reset** or a double-click returns to the whole world.
 
+The map and the answer list are linked in both directions. Point at a country you have
+already found and it names itself; hover a name in the list and it is outlined on the
+map; click that name and the map travels to it. Countries you have *not* yet found stay
+silent — the link is for confirming what you named and finding where it was, not for
+reading the answers off the map — but everything names itself once the game is over.
+
 ## Running it
 
 The game is plain HTML/CSS/JS with no build step and no runtime dependencies. It does
