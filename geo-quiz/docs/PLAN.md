@@ -352,11 +352,43 @@ and West Africa — the two panels cross-highlight:
 
 - Hovering (or tapping) a country shows a tooltip with its name, and highlights the
   matching list row.
-- Hovering a list row outlines that country on the map, and nudges the view toward it.
+- Hovering a list row outlines that country on the map; clicking it travels there.
 
 This works during play too: hovering a found country confirms what you named it. On
 touch, tap-to-identify is the same gesture. No labels, no clutter, and it answers "which
 one is that?" in both directions.
+
+**Hovering names, clicking travels.** Splitting the two verbs is what makes the list →
+map direction work on touch, which has no hover to offer: a tap is a click, so the map
+can still be driven from the list. It also keeps the view from lurching about under a
+pointer that was only passing over the list on its way somewhere else.
+
+**Only countries you have found will name themselves.** Otherwise the map is an answer
+sheet — sweep the pointer across Europe and read off the ones you are missing.
+Out-of-scope countries are the exception: playing a single continent they are never valid
+answers, so naming them costs nothing and helps you get your bearings. Once the game
+ends, everything names itself, which is the point at which a red country most needs to
+say what it was.
+
+### Learning mode
+
+A toggle in the nav, next to the clock it switches off. It is not a third tab: it is
+orthogonal to countries/capitals — you can learn either — so it reads as its own switch.
+
+- **The clock is off**, dimmed rather than removed so the layout does not jump and it is
+  obvious which thing has been disabled. The run still starts on the first keystroke; it
+  is only the timer that stays dark, and the end-of-game line reports no time.
+- **Clicking a country names it**, whether or not you have found it. Hovering still does
+  not — the split is the whole design. A pointer wandering across Europe should not
+  strip-mine the answers; a click is a question you asked, and in this mode it gets
+  answered.
+- **A reveal is not an answer.** It does not score, does not paint the country green and
+  does not join the list. Typing still does all three, so the counter keeps meaning what
+  it says.
+
+Turning it on or off starts a fresh game, like any other change to what is being asked of
+you — the same confirm as switching mode or region. It is a setting rather than a game
+state, so it survives *Play again*.
 
 ### Accessibility
 
@@ -377,8 +409,9 @@ one is that?" in both directions.
 | **2** ✓ | Input + matching engine + green fill + list + counter |
 | **3** ✓ | Timer, win detection, Give up, red reveal of missing |
 | **4** ✓ | Capitals mode + mode switch *(landed with Phase 2 — both modes share one index)* |
-| **5** ◐ | Micro-state pins ✓, zoom/pan ✓, continent scoping ✓, reduced motion ✓. Map↔list cross-highlight still outstanding |
+| **5** ✓ | Micro-state pins ✓, zoom/pan ✓, continent scoping ✓, reduced motion ✓, map↔list cross-highlight ✓ |
 | **6** ✓ | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
+| **7** ✓ | Learning mode: clock off, click-to-name (§6) |
 
 Phase 0 is complete (§3). Phase 1 is complete: `index.html`, `styles.css` and `app.js`
 render the nav, the neutral map and the (inert) entry and list panels.
@@ -447,6 +480,30 @@ Two additions the plan did not call for but the phase needed:
 The panel header switches from *Found* to *Result* when the game ends, which also stops it
 duplicating the "Found — n" group heading directly beneath it.
 
+### Phase 5 notes
+
+Three details the cross-highlight (§6) needed that the design did not anticipate:
+
+- **Outlines are drawn into a layer of their own.** SVG has no `z-index`, so outlining a
+  country in place leaves the outline overdrawn by every country painted after it —
+  France's eastern border would sit underneath Germany. `#highlight` holds *copies* of
+  the pointed-at shape, appended last. Copies rather than `<use>` references: CSS
+  selectors that match the original also match a `<use>` instance, so `#countries path`
+  would keep winning over any outline style. A copy sits outside `#countries` and takes
+  the outline cleanly. A copied pin holds a snapshot of the transform that zooming
+  rewrites, so `applyView()` re-syncs it.
+- **A tap is resolved by point, not by `event.target`.** Pointer capture — which the pan
+  needs — retargets every event of a drag to the map itself, so a tap while zoomed in
+  would identify nothing. `document.elementFromPoint()` answers correctly either way. A
+  tap is only a tap if the pointer moved less than 6px, or every pan would end in a name.
+- **A click on a list row has to hand focus back to the input.** Clicking an `<li>`
+  leaves focus on `<body>`, and the next thing typed would go nowhere — a nasty way to
+  lose a run. Not on touch, where refocusing throws the keyboard back over the map.
+
+Rows become focusable only once the game is over. During play focus belongs in the input,
+and 195 tab stops would bury every other control; afterwards the input is disabled and
+tabbing the list to walk the map is the natural way to study it.
+
 ---
 
 ## 8. Deliberately out of v1
@@ -461,8 +518,15 @@ Held back to keep the first version small — each is easy to add later:
   as genuine blanks
 - Hints, per-continent games, streaks
 - Flags mode
-- "Reveal one" button
 - Sharing a result card
+- **Reveals as a currency** during a *timed* game: a fixed budget of them, or one bought
+  for a time penalty. Learning mode (§6) now covers wanting to read the map rather than
+  be tested by it, and it sidesteps the pricing question by switching the clock off
+  entirely. Charging for a reveal is the harder design: it would be the first thing in
+  the game to put a number on the clock that you did not spend typing, which §9 rejected
+  for wrong answers. A reveal is different in kind from a typo — you are asking for an
+  answer, not fumbling one you knew — but it needs a sense of how the game actually
+  plays before a price can be picked
 
 ---
 
@@ -474,6 +538,8 @@ All the open questions from the first draft are now settled:
 |---|---|
 | Timer format | `mm:ss`, rolling to `h:mm:ss` past an hour |
 | Wrong-answer penalty | None. Wasted time is the cost; penalties are a later idea |
-| Labelling missed countries | No labels. Map and list cross-highlight on hover/tap instead (§6) |
+| Labelling missed countries | No labels. Map and list cross-highlight instead — hover names, click travels (§6) |
+| Naming unfound countries | Silent on hover, always. In learning mode a *click* names any country, because you asked (§6) |
+| Pricing a reveal | Not priced — learning mode switches the clock off instead. Reveals as a timed currency stay a later idea (§8) |
 | Matching strictness | Exact after normalisation; no fuzzy matching (§5) |
 | Alias policy | Abbreviations, English exonyms, former official names. No `America`, `Britain`, `Holland` (§5) |

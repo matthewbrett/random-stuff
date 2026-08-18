@@ -23,6 +23,10 @@
       </select>
     </label>
 
+    <button type="button" class="learn" id="learn" aria-pressed="false">
+      Learn
+    </button>
+
     <div class="timer" id="timer" aria-label="Elapsed time">00:00</div>
   </header>
 
@@ -37,6 +41,12 @@
         <button type="button" id="zoom-out" title="Zoom out">−</button>
         <button type="button" id="zoom-reset" title="Reset view">Reset</button>
       </div>
+
+      <!--
+        Names a country under the pointer. A sibling of .map rather than a child: loading
+        the map replaces that element's contents wholesale.
+      -->
+      <div class="map-tip" id="map-tip" hidden aria-hidden="true"></div>
 
       <form class="entry" id="entry" autocomplete="off">
         <input
