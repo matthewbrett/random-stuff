@@ -246,6 +246,28 @@ const pinned = new Set(pins.map((p) => p.m49));
 const unpinned = countries.filter((c) => c.micro && !pinned.has(c.m49));
 assert(unpinned.length === 0, `no pin for: ${unpinned.map((c) => c.name).join(', ')}`);
 
+// The declutter aims for PIN_GAP between bulb centres but tethers each pin to within
+// MAX_NUDGE of what it marks, so a crowded pair settles just inside the target rather
+// than at it. app.js caps how large it draws a pin by this distance, to keep bulbs from
+// overlapping at world zoom, so the achieved minimum is a contract rather than a detail.
+// Measured on the rounded coordinates, because those are what ships and what the browser
+// draws: the declutter settles Saint Vincent and Barbados at 23.0 units apart, and
+// rounding both to integers takes that to 22.6.
+const PIN_FLOOR = 22;
+const at = (p) => [Math.round(p.x), Math.round(p.y)];
+let closest = Infinity;
+for (let i = 0; i < pins.length; i++) {
+  for (let j = i + 1; j < pins.length; j++) {
+    const [ax, ay] = at(pins[i]);
+    const [bx, by] = at(pins[j]);
+    closest = Math.min(closest, Math.hypot(ax - bx, ay - by));
+  }
+}
+assert(
+  closest >= PIN_FLOOR,
+  `closest pins are ${closest.toFixed(1)} units apart, below the ${PIN_FLOOR} app.js draws to`
+);
+
 // No pin may be sliced off by the edge of the viewBox.
 const clipped = pins.filter(
   (p) =>

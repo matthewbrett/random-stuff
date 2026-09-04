@@ -31,6 +31,11 @@ answer, matched on size and shape, and where a country has a name it is regularl
 with, that one is always in the set: Slovakia gets Slovenia, Niger gets Nigeria, Austria
 gets Australia. A Caribbean question is six Caribbean islands.
 
+**Level** sets how hard it is, and moves three things at once: how alike the wrong answers
+are, how many there are (4, 6 or 8), and how much map you get around the country. Easy
+gives you four countries from four continents and a wide view; hard gives you eight from
+one sub-region framed tight. Medium is the default.
+
 One guess per country, and the map stays grey while you play — a green neighbour would be
 a hint — so the whole result is painted at the end, where each miss also records what you
 picked instead.
@@ -38,6 +43,7 @@ picked instead.
 Countries too small to have a shape at map scale are framed against their neighbours
 instead of zoomed into, because zoomed to fit, Saint Lucia is a pin in empty ocean. You
 answer those from where they sit in the island chain, which is how you actually know them.
+That overrides the level: a tight frame on Tuvalu would be unanswerable, not hard.
 
 ### Learning mode
 

@@ -24,6 +24,17 @@
       </select>
     </label>
 
+    <!-- Identify mode only: one control moves distractor tightness, framing and option
+         count together, because they are three faces of the same dial (PLAN §10). -->
+    <label class="scope" id="level-field" hidden>
+      <span class="scope-label">Level</span>
+      <select id="level" aria-label="Difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </label>
+
     <button type="button" class="learn" id="learn" aria-pressed="false">
       Learn
     </button>

@@ -4,10 +4,10 @@ A front-end-only web game for learning the world's countries and their capitals.
 You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
-**Status:** Phases 0–7 complete and wired into the deploy pipeline; publishes to
-`/random-stuff/geo-quiz/` on merge to `main`. Phase 8 (identify mode, §10) is designed;
-8a–8c are built, so identify mode is playable; 8d, the difficulty picker, is not started
-and the mode runs at a fixed hard tier with six options.
+**Status:** All phases complete and wired into the deploy pipeline; publishes to
+`/random-stuff/geo-quiz/` on merge to `main`. Phase 8 added identify mode (§10) — the map
+marks a country and you pick its name — with a difficulty picker that moves distractor
+tightness, framing and option count together.
 **Last Updated:** 2026-09-04
 
 ---
@@ -20,7 +20,7 @@ Three modes. The first two share a loop -- you type, the map answers:
 |---|---|---|
 | **Countries** | A typed country name | That country turns green |
 | **Capitals** | A typed capital city name | Its country turns green, list shows `Paris — France` |
-| **Identify** | A pick from six buttons | That country turns green, at the end (§10) |
+| **Identify** | A pick from 4, 6 or 8 buttons | That country turns green, at the end (§10) |
 
 Identify runs its own loop -- one country asked at a time, no typing -- described in §10.
 The typing loop:
@@ -430,7 +430,7 @@ state, so it survives *Play again*.
 | **5** ✓ | Micro-state pins ✓, zoom/pan ✓, continent scoping ✓, reduced motion ✓, map↔list cross-highlight ✓ |
 | **6** ✓ | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 | **7** ✓ | Learning mode: clock off, click-to-name (§6) |
-| **8** | Identify mode: highlight a country, pick its name from buttons (§10). 8a–8c ✓, 8d outstanding |
+| **8** ✓ | Identify mode: highlight a country, pick its name from buttons (§10) |
 
 Phase 0 is complete (§3). Phase 1 is complete: `index.html`, `styles.css` and `app.js`
 render the nav, the neutral map and the (inert) entry and list panels.
@@ -767,10 +767,41 @@ tool can tell you and it costs a `Map` and a sort.
 | **8a** ✓ | Sub-region table + shape descriptors + anchors in `build-data.mjs`, with both invariants asserted |
 | **8b** ✓ | `distract.js` — the scoring engine, standalone and testable with no UI. The sample sets above are the fixtures |
 | **8c** ✓ | Question loop, option grid, framing. Countries only |
-| 8d | Difficulty picker wired to tightness, framing and count together |
+| **8d** ✓ | Difficulty picker wired to tightness, framing and count together |
 
 8d comes last deliberately: where the line between *hard* and *unfair* actually falls is
 not knowable until the thing is played.
+
+### Phase 8d notes
+
+One select in the nav, shown only in identify mode, moving all three dials together:
+
+| Level | Distractors | Options | Framing |
+|---|---|---|---|
+| Easy | different continents | 4 | 6× the country's longest side |
+| **Medium** (default) | same continent, different sub-region | 6 | 2.5× |
+| Hard | same sub-region, name twin seated | 8 | 1.4×, tight |
+
+Measured frame widths, in map units against a 2000-wide map:
+
+| | easy | medium | hard |
+|---|---|---|---|
+| Chad | 1248 | 520 | 291 |
+| Mongolia | 1002 | 418 | 234 |
+| Italy | 708 | 295 | 165 |
+| Slovakia | 162 | 125 | 125 |
+| Monaco, Saint Lucia | 125 | 125 | 125 |
+| Tuvalu | 281 | 281 | 281 |
+
+The bottom three rows are the shape clamp doing its job. 125 is the 16× zoom ceiling, so
+anything small sits there whatever level is picked, and Tuvalu is widened past it at every
+level because there is nothing else in the Pacific to place it by. **Framing is a floor,
+not a ceiling** — the level asks for a frame and the clamp overrules it when a tight one
+would make the question unanswerable rather than hard.
+
+Medium is the default rather than hard. Six options is what §9 settled on, and hard opens
+on eight same-sub-region countries with a name twin among them, which is a lot to meet
+first.
 
 ### Phase 8c notes
 
@@ -915,14 +946,37 @@ bbox is dominated by its outliers — Europe's reaches the Urals, North America'
 Canada to Trinidad, Oceania's crosses the antimeridian — so all three fit at barely more
 than 1×, which is no better than the whole-world view.
 
-### Pins are already screen-space, and sized for a desktop
+### Pins are screen-space, and were sized for a desktop — fixed
 
 `applyView()` counter-scales the pins so they hold a constant size on screen at every
-zoom. That size is 20 map units, which was tuned against a ~1100px map: **11px on
-desktop, but 3.7 × 5.6px on a phone** (measured, not derived). Making the pin a constant
-CSS size rather than a constant map size is a small change to `applyView()` and roughly
-triples it on a phone. It improves the existing modes too — a 3.7px green dot is thin
-feedback for finding Malta.
+zoom. That size was 20 map units, tuned against a ~1100px map: **11px on desktop, but
+3.7 × 5.6px on a phone** (measured, not derived).
+
+The obvious fix — make it a constant CSS size instead — does not work, and this section
+used to recommend it. **The declutter caps how large a pin can be drawn.** The generator
+only separates bulb centres by `PIN_GAP`, so at world zoom on a phone (0.19 px per unit)
+non-overlapping pins can be about 4px across whatever size is asked for. Asking for 26
+there would turn the eastern Caribbean back into the illegible clump the declutter exists
+to prevent.
+
+So `pinScale()` grows a pin toward the size it wants as zoom allows, capped by the spacing
+it was given. Measured, Vatican City's pin:
+
+| view width | phone | desktop |
+|---|---|---|
+| 2000 (whole world) | 4.3px | 11px |
+| 372 | 23px | 26px |
+| 266 and tighter | 26px | 26px |
+
+That is the right shape for identify mode, which never asks at world zoom — a pinned
+question frames at 125–422 units, where the pin reaches its full 26px — while the typing
+modes at world zoom keep the small tidy pins they always had.
+
+One number had to become a contract. The declutter aims for 23 units but tethers each pin
+to what it marks, so a crowded pair settles just inside that; rounding the coordinates to
+integers on the way out takes the closest pair (Saint Vincent and Barbados) to **22.6**.
+The app draws to a floor of 22 and `build-data.mjs` now asserts the shipped, *rounded*
+positions hold that floor, so the two cannot drift apart unnoticed.
 
 The natural follow-on is to make the *rule* dynamic as well: pin whatever renders below
 about 24px in the current view, rather than the fixed `micro` flag. Simulated across the

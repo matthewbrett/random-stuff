@@ -96,6 +96,11 @@ body {
   gap: 8px;
 }
 
+/* .scope sets display, so the UA's [hidden] rule loses to it. Say it explicitly. */
+.scope[hidden] {
+  display: none;
+}
+
 .scope-label {
   font-size: 0.72rem;
   font-weight: 600;

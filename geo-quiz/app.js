@@ -37,12 +37,28 @@ const MODES = {
 const BASE = { w: 2000, h: 1000 };
 const MAX_ZOOM = 16;
 
-/** How many buttons a question offers, answer included. 8d makes this a setting. */
-const OPTION_COUNT = 6;
-/** Tier the distractor engine builds sets at. Also 8d's to expose. */
-const TIER = 'hard';
-/** How much room around the country the frame leaves, as a multiple of its longest side. */
-const FRAME_PAD = 1.4;
+/**
+ * Difficulty, as one dial with three faces (docs/PLAN.md §10).
+ *
+ * They move together because they are the same question asked three ways. Tightness is
+ * the one that really decides it: against one-per-continent wrong answers anyone who
+ * roughly knows where things are scores near 100% at any option count, so the count sets
+ * the floor and the distractors set the difficulty.
+ *
+ * `pad` is how much map to show around the country, as a multiple of its longest side.
+ * Wide framing is an easier question -- you can place a country by its neighbours without
+ * knowing its outline. It is a floor, not a ceiling: askingWidth() still widens past it
+ * for anything too small to read, because a tight frame on Saint Lucia is unanswerable
+ * rather than hard, whatever level you picked.
+ */
+const LEVELS = {
+  easy: { tier: 'easy', count: 4, pad: 6 },
+  medium: { tier: 'medium', count: 6, pad: 2.5 },
+  hard: { tier: 'hard', count: 8, pad: 1.4 },
+};
+
+/** Framing for travelling to a country from the answer list, where difficulty is moot. */
+const TRAVEL_PAD = 1.4;
 /**
  * A country too small to read has to be framed against its neighbours instead, or the
  * question is unanswerable rather than hard -- zoomed to fit, Saint Lucia is a pin in
@@ -54,10 +70,27 @@ const READABLE_PX = 24;
 /** How long the marked-up answer stays before the next question. A tap skips the wait. */
 const BEAT = { right: 900, wrong: 2200 };
 
+/** Pin geometry, mirroring tools/build-data.mjs. Changing it there means changing it here. */
+const PIN = {
+  /** Bulb diameter as generated, in map units (PIN_RADIUS * 2). */
+  bulb: 20,
+  /**
+   * Safe distance between bulb centres, in map units. One less than the generator's
+   * PIN_GAP of 23: the declutter tethers each pin to within MAX_NUDGE of what it marks,
+   * so a crowded pair can settle just inside the target rather than at it, and the
+   * closest pair in the current map is 22.6 units apart. build-data.mjs asserts that
+   * this floor holds, so the two cannot drift apart unnoticed.
+   */
+  gap: 22,
+  /** The size a pin would like to be on screen, in CSS pixels. */
+  wanted: 26,
+};
+
 /** idle -> running (first keystroke, or first question) -> finished. */
 const state = {
   mode: 'countries',
   scope: '', // '' is the whole world, otherwise a continent name
+  level: 'medium', // identify mode difficulty; see LEVELS
   learning: false, // untimed, and the map will name a country you ask it about
   status: 'idle',
   found: new Set(),
@@ -108,6 +141,8 @@ const el = {
   learn: document.getElementById('learn'),
   timer: document.getElementById('timer'),
   scope: document.getElementById('scope'),
+  levelField: document.getElementById('level-field'),
+  level: document.getElementById('level'),
   listTitle: document.getElementById('list-title'),
   count: document.getElementById('count'),
   total: document.getElementById('total'),
@@ -206,14 +241,37 @@ function applyView() {
   if (!svg) return;
   svg.setAttribute('viewBox', `${view.x} ${view.y} ${view.w} ${view.h}`);
 
-  // Pins are drawn in map units, so without this they would balloon as you zoom in.
-  // Scaling about the tip (their transform origin) keeps them pointing at the same spot.
-  const scale = view.w / BASE.w;
+  const scale = pinScale();
   for (const pin of pins) {
     pin.node.setAttribute('transform', `translate(${pin.x},${pin.y}) scale(${scale})`);
   }
   syncOverlays(); // an outlined pin holds a copy of the transform just rewritten
   el.map.classList.toggle('is-zoomed', view.w < BASE.w);
+}
+
+/**
+ * How much to scale the pins by, so a pin is as close to PIN.wanted pixels as it can be
+ * without colliding with its neighbours.
+ *
+ * The old rule held them at a constant size on screen, which sounds right and is: they
+ * were 11px on a desktop map and 3.7px on a phone, because the size was picked in map
+ * units against a desktop-sized map and never revisited.
+ *
+ * A constant CSS size cannot simply be substituted, though. The generator's declutter
+ * only guarantees PIN.gap map units between bulb centres, so at world zoom on a phone --
+ * 0.19 px per unit -- non-overlapping pins can be at most about 4px across whatever we
+ * ask for. Asking for 26 there would turn the eastern Caribbean back into the illegible
+ * clump the declutter exists to prevent.
+ *
+ * So the pin grows toward the size it wants as zoom allows, and is capped by the spacing
+ * it was given. That is exactly the right shape for identify mode, which never asks at
+ * world zoom: a pinned question frames at 125-422 units, where a pin reaches its full
+ * 26px, while the typing modes at world zoom keep the small tidy pins they always had.
+ */
+function pinScale() {
+  const px = pixelsPerUnit(view.w);
+  if (!px) return view.w / BASE.w;
+  return Math.min(PIN.wanted / px, PIN.gap) / PIN.bulb;
 }
 
 function clampView() {
@@ -477,7 +535,7 @@ function frameOn(x, y, width) {
  */
 function spanOf(country) {
   const [x0, y0, x1, y1] = country.bbox;
-  return Math.max(x1 - x0, (y1 - y0) * 2, 1) * FRAME_PAD;
+  return Math.max(x1 - x0, (y1 - y0) * 2, 1);
 }
 
 /**
@@ -523,7 +581,7 @@ function askingWidth(country) {
   // map cannot reach says every country is legible, since anything is if you zoom far
   // enough. That made the widening below dead code.
   const tightest = BASE.w / MAX_ZOOM;
-  let width = Math.max(spanOf(country), tightest);
+  let width = Math.max(spanOf(country) * LEVELS[state.level].pad, tightest);
 
   while (
     width < BASE.w &&
@@ -547,7 +605,7 @@ function focusCountry(m49, width) {
   const [bx, by] = country.anchor;
   const at = pin ? { x: pin.x, y: pin.y } : { x: bx, y: by };
 
-  frameOn(at.x, at.y, width ?? spanOf(country));
+  frameOn(at.x, at.y, width ?? spanOf(country) * TRAVEL_PAD);
   setHighlight(m49);
   el.map.scrollIntoView({ block: 'nearest' }); // stacked layout: the map may be off-screen
 }
@@ -753,7 +811,8 @@ function askNext() {
   focusCountry(next.m49, askingWidth(next));
   setHighlight(''); // the question has its own layer; leave the pointer's one free
   setAsking(next.m49);
-  renderOptions(optionsFor(next, { tier: TIER, count: OPTION_COUNT, pool: active() }));
+  const level = LEVELS[state.level];
+  renderOptions(optionsFor(next, { tier: level.tier, count: level.count, pool: active() }));
   el.prompt.textContent = 'Which country is highlighted?';
   render();
   say('');
@@ -975,6 +1034,8 @@ function render() {
   // Exactly one answer row is ever shown: type into it, or pick from it.
   el.entry.hidden = picks;
   el.picker.hidden = !picks;
+  // Difficulty is only meaningful where the game chooses your wrong answers for you.
+  el.levelField.hidden = !picks;
 
   // Learning mode names any country you click, which here would simply hand over the
   // answer. Locked off for as long as identify mode is selected.
@@ -1059,6 +1120,14 @@ async function setLearning(on) {
   if (ok && on) say('Learning mode. The clock is off, and clicking a country names it.');
 }
 
+async function setLevel(level) {
+  if (!LEVELS[level] || level === state.level) return;
+  const ok = await change(() => {
+    state.level = level;
+  });
+  if (!ok) el.level.value = state.level; // put the select back
+}
+
 async function setScope(scope) {
   if (scope === state.scope) return;
   const ok = await change(() => {
@@ -1088,6 +1157,8 @@ for (const button of el.modes) {
 }
 
 el.scope.addEventListener('change', () => setScope(el.scope.value));
+
+el.level.addEventListener('change', () => setLevel(el.level.value));
 
 el.learn.addEventListener('click', () => setLearning(!state.learning));
 
