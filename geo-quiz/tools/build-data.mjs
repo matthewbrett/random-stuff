@@ -397,6 +397,10 @@ function describe(f) {
     // Rounded hard: the engine only ever compares these, and log-area at three
     // significant figures is far finer than "do these two feel similar".
     anchor: [roundTo(ax, 0), roundTo(ay, 0)],
+    // The largest landmass only, which is what makes this usable for framing where
+    // getBBox() is not: the union of Fiji's islands spans x 0..1992, so framing a
+    // country by its full extent shows the whole world (docs/PLAN.md §11).
+    bbox: [roundTo(x0, 0), roundTo(y0, 0), roundTo(x1, 0), roundTo(y1, 0)],
     area: roundTo(area, 3),
     // How elongated -- Chile and Norway score high, Poland and Uruguay low. The floor
     // goes on BOTH sides, not just the divisor: with it on the divisor alone a country

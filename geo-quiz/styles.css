@@ -149,6 +149,18 @@ body {
   outline-offset: 1px;
 }
 
+/* Identify mode has no clock to switch off and answers by button, so there is nothing
+   for learning mode to do there. Shown but visibly dead, rather than vanishing and
+   leaving people to wonder where it went. */
+.learn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.learn:disabled:hover {
+  color: var(--muted);
+}
+
 .timer {
   margin-left: auto;
   font-size: 1.25rem;
@@ -432,6 +444,125 @@ body {
   color: #fff;
 }
 
+/* --- Identify mode: the option grid --------------------------------------------- */
+
+/* .entry and .picker share a slot, and both set display, so the UA's [hidden] rule
+   (display: none at zero specificity) loses to them. Say it explicitly. */
+.entry[hidden],
+.picker[hidden] {
+  display: none;
+}
+
+.picker {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 20px 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--panel-edge);
+}
+
+.prompt {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  /* The touch minimum, and the reason the grid is measured rather than eyeballed: a
+     long name like "Saint Vincent and the Grenadines" has to wrap without bursting. */
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid var(--panel-edge);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.92rem;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.option:hover {
+  border-color: var(--muted);
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Shown so the shortcut is discoverable -- a binding nobody can see goes unused. */
+.key {
+  flex: 0 0 auto;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--panel-edge);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Never colour alone: the answer is also the only one that keeps a strong border, and
+   the status line says both names in words. */
+.option.is-right {
+  background: var(--land-found);
+  border-color: var(--land-found);
+  color: #04210f;
+}
+
+.option.is-wrong {
+  background: var(--land-missed);
+  border-color: var(--land-missed);
+  color: #2b0707;
+}
+
+.option.is-right .key,
+.option.is-wrong .key {
+  background: rgba(0, 0, 0, 0.2);
+  color: inherit;
+}
+
+.picker .give-up {
+  align-self: center;
+}
+
+/* The country being asked about. Its own layer rather than the pointer highlight's, so
+   moving the mouse over the map cannot wipe the question. Filled as well as outlined --
+   an outline alone is invisible on a country a pixel or two across, which is most of
+   them at world zoom. */
+#asking {
+  pointer-events: none;
+}
+
+#asking path {
+  fill: rgba(251, 191, 36, 0.35);
+  stroke: #fbbf24;
+  stroke-width: 3;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+#asking line {
+  stroke: #fbbf24;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
 /* --- List ----------------------------------------------------------------------- */
 
 .list-panel {
@@ -512,6 +643,15 @@ body {
 
 .answer-row.is-missed .label {
   color: var(--muted);
+}
+
+/* What you picked instead, on a missed row. Identify mode only. */
+.picked {
+  margin-left: auto;
+  padding-left: 8px;
+  color: var(--land-missed);
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 
 .answer-group {
@@ -710,16 +850,50 @@ body {
   }
 
   /* One row of controls has always been tight here, and the Learn toggle no longer fits
-     at all -- the nav overflowed the page rather than wrapping. Let it wrap and grow. */
+     at all -- the nav overflowed the page rather than wrapping. Let it wrap and grow.
+
+     A third mode tab pushed this to three rows and took 130px off a 844px phone, in the
+     mode that exists for phones. Tightened until it wraps to two: the brand and the
+     timer share the first row, the controls take the second. */
   .nav {
     height: auto;
     flex-wrap: wrap;
-    gap: 10px 12px;
-    padding: 10px 12px;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .mode {
+    padding: 6px 10px;
+    font-size: 0.85rem;
+  }
+
+  .scope-label {
+    /* "Region" is redundant next to a select that reads "Whole world". */
+    display: none;
+  }
+
+  .scope select,
+  .learn {
+    padding: 5px 10px;
+    font-size: 0.82rem;
+  }
+
+  .timer {
+    font-size: 1.05rem;
   }
 
   .brand {
     font-size: 1rem;
+  }
+
+  /* Two columns, measured: 181x58px buttons on a 390px phone, which clears the 44px
+     touch target and still wraps the longest country name onto two lines. */
+  .options {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .picker {
+    padding: 10px 12px 14px;
   }
 }
 

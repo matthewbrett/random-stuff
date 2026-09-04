@@ -6,22 +6,24 @@ join a running list. A timer measures the whole attempt.
 
 **Status:** Phases 0–7 complete and wired into the deploy pipeline; publishes to
 `/random-stuff/geo-quiz/` on merge to `main`. Phase 8 (identify mode, §10) is designed;
-8a and 8b are built — the data the engine needs, and the engine itself, both tested — and
-8c–8d are not started, so nothing imports the engine and the mode is not yet playable.
+8a–8c are built, so identify mode is playable; 8d, the difficulty picker, is not started
+and the mode runs at a fixed hard tier with six options.
 **Last Updated:** 2026-09-04
 
 ---
 
 ## 1. The game
 
-Two modes, same core loop:
+Three modes. The first two share a loop -- you type, the map answers:
 
-| Mode | You type | Effect on a correct answer |
+| Mode | You give | Effect on a correct answer |
 |---|---|---|
-| **Countries** | A country name | That country turns green |
-| **Capitals** | A capital city name | Its country turns green, list shows `Paris — France` |
+| **Countries** | A typed country name | That country turns green |
+| **Capitals** | A typed capital city name | Its country turns green, list shows `Paris — France` |
+| **Identify** | A pick from six buttons | That country turns green, at the end (§10) |
 
-The loop:
+Identify runs its own loop -- one country asked at a time, no typing -- described in §10.
+The typing loop:
 
 1. Map loads with all 195 countries in a neutral grey.
 2. You type a name and press Enter.
@@ -145,20 +147,22 @@ micro-state has a pin, and no pin is clipped.
 · grafted Tuvalu geometry from the 10m dataset
 ✓ 195/195 countries, all with geometry and a capital
   data/world.svg     195 playable + 45 inert paths, 34 pins (11 nudged), 790 KB
-  data/countries.js  217 accepted country spellings, 47 KB (8 KB gzipped)
+  data/countries.js  217 accepted country spellings, 52 KB (11 KB gzipped)
   18 sub-regions, all inside one continent; 195 anchors and shape descriptors
 ```
 
-`countries.js` grew from 27 KB to 47 KB raw (5 KB to 8 KB gzipped) when Phase 8a added
-the regions, anchors and shape descriptors. `world.svg` is byte-identical across that
-change — no geometry was touched.
+`countries.js` grew from 27 KB to 52 KB raw (5 KB to 11 KB gzipped) across Phase 8, which
+added the regions, anchors, bounding boxes and shape descriptors. `world.svg` is
+byte-identical throughout — no geometry was touched.
 
 - `data/world.svg` — `<path id="c250">` per country, in four groups: `#countries`
   (playable), `#other` (territories and disputed areas, drawn but inert), `#markers`
   (micro-state pins, `<g id="m336">`), `#leaders` (leader lines, `<line id="l336">`)
 - `data/countries.js` — 195 entries `{ m49, name, official, capitals[], aliases[],
-  continent, region, micro, anchor, area, aspect, compact, pieces }`. The last six landed
-  with Phase 8a; everything from `region` on exists for the identify-mode engine (§10)
+  continent, region, micro, anchor, bbox, area, aspect, compact, pieces }`. Everything
+  from `region` on serves identify mode (§10): the shape descriptor is what the distractor
+  engine scores on, and `bbox` — the largest landmass, never the whole country — is what
+  framing measures
 
 Hand-maintained data is kept separately so regenerating never clobbers it:
 `tools/aliases.mjs` for answer spellings, `tools/regions.mjs` for the sub-region table.
@@ -426,7 +430,7 @@ state, so it survives *Play again*.
 | **5** ✓ | Micro-state pins ✓, zoom/pan ✓, continent scoping ✓, reduced motion ✓, map↔list cross-highlight ✓ |
 | **6** ✓ | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 | **7** ✓ | Learning mode: clock off, click-to-name (§6) |
-| **8** | Identify mode: highlight a country, pick its name from buttons (§10). Depends on the map fixes in §11 |
+| **8** | Identify mode: highlight a country, pick its name from buttons (§10). 8a–8c ✓, 8d outstanding |
 
 Phase 0 is complete (§3). Phase 1 is complete: `index.html`, `styles.css` and `app.js`
 render the nav, the neutral map and the (inert) entry and list panels.
@@ -762,11 +766,68 @@ tool can tell you and it costs a `Map` and a sort.
 |---|---|
 | **8a** ✓ | Sub-region table + shape descriptors + anchors in `build-data.mjs`, with both invariants asserted |
 | **8b** ✓ | `distract.js` — the scoring engine, standalone and testable with no UI. The sample sets above are the fixtures |
-| 8c | Question loop, option grid, framing. Countries only |
+| **8c** ✓ | Question loop, option grid, framing. Countries only |
 | 8d | Difficulty picker wired to tightness, framing and count together |
 
 8d comes last deliberately: where the line between *hard* and *unfair* actually falls is
 not knowable until the thing is played.
+
+### Phase 8c notes
+
+The mode is playable: a third tab, the map frames and marks a country, six buttons, one
+shot each, and the run ends when all 195 have been asked. `found.size / active().length`
+kept its meaning, so the list, the breakdown, the timer, Give up and Play again all
+carried over without changes.
+
+**`focusCountry()` was fixed rather than worked around.** It framed by `getBBox()`, which
+returns the union of every island a country owns, so Fiji, Kiribati and New Zealand all
+measured most of the map and travelling to them showed the whole world (§11). 8a's
+descriptor now carries a `bbox` of the *largest landmass* — Fiji is 8 units wide by that
+measure rather than 1992 — and framing reads it instead.
+
+**The question needs its own overlay layer.** The first version reused `#highlight`, the
+layer the pointer draws into, and moving the mouse across the map wiped the question.
+`#asking` is a second layer, filled as well as outlined: an outline alone is invisible on
+a country a pixel or two across, which is most of them.
+
+**The context rule works, but only after the readability test was fixed.** `askingWidth()`
+widens the frame while the country is too small to read and too few neighbours are in
+view. As first written it measured readability at an unclamped width, where every country
+is legible because anything is if you zoom far enough — the loop was dead code, and every
+small country landed at the 16× zoom floor by accident. Judged at the width the map will
+actually use, and against the drawn map rather than the letterboxed `<svg>` box, it does
+what §10 asks:
+
+| | framed at |
+|---|---|
+| Somalia, Canada, India | 249, 528, 501 — their own extent, tight |
+| Grenada, Dominica, Andorra, Cape Verde | 125 — clustered, neighbours already in view |
+| Tuvalu, Nauru, Palau, Marshall Islands | 281–422 — isolated, widened until the Pacific gives them context |
+
+**The run starts on the first answer, not the first question.** Starting it when the
+question appeared meant the clock was already running the instant you switched tab, so
+changing region immediately asked "this starts a new game" before the game had begun. The
+first answer is the equivalent of the first keystroke: posing a question is not committing
+to play.
+
+Three smaller things:
+
+- **One click handler for the whole picker, not one per button.** A click on an option
+  bubbles to the panel, so separate handlers marked the answer and then instantly skipped
+  past it. One handler either answers or advances, never both.
+- **A third tab cost the mobile nav a row** — 130px of a 844px phone, in the mode that
+  exists for phones. Tightened back to 87px by shrinking the tab padding and dropping the
+  "Region" label, which only ever restated the select next to it.
+- **Learning mode is locked off here.** It names any country you click, which in this mode
+  hands over the answer. Shown but disabled rather than removed, so it is clear it is
+  unavailable rather than gone.
+
+Missed rows in the end-of-game list carry what you picked instead — *"✗ Grenada — you
+said Saint Kitts and Nevis"* — which is §10's "worth having, nearly free", and it is: a
+`Map` and a `<span>`.
+
+Still outstanding from §11 and visible in this mode: pins are 3.7px on a phone, so a
+pinned question is legible but thin. That fix helps every mode and is not 8d's.
 
 ### Phase 8b notes
 

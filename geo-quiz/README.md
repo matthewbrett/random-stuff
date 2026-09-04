@@ -20,6 +20,25 @@ you it is a spelling problem rather than just rejecting the answer.
 Use **Region** to play one continent at a time instead of all 195. The map scrolls to
 zoom and drags to pan; **Reset** or a double-click returns to the whole world.
 
+### Identify mode
+
+**Identify** is the third tab and needs no typing, which makes it the one that works on a
+phone. The map frames and marks one country and you pick its name from six buttons — or
+press 1–6, since the map never has to be pointed at.
+
+The wrong answers are not random. They come from the same corner of the world as the
+answer, matched on size and shape, and where a country has a name it is regularly confused
+with, that one is always in the set: Slovakia gets Slovenia, Niger gets Nigeria, Austria
+gets Australia. A Caribbean question is six Caribbean islands.
+
+One guess per country, and the map stays grey while you play — a green neighbour would be
+a hint — so the whole result is painted at the end, where each miss also records what you
+picked instead.
+
+Countries too small to have a shape at map scale are framed against their neighbours
+instead of zoomed into, because zoomed to fit, Saint Lucia is a pin in empty ocean. You
+answer those from where they sit in the island chain, which is how you actually know them.
+
 ### Learning mode
 
 The **Learn** toggle in the nav turns the quiz into something you can browse. The clock

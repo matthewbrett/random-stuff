@@ -8,7 +8,13 @@
 
 import { COUNTRIES, CONTINENTS } from './data/countries.js';
 import { evaluate } from './match.js';
+import { optionsFor } from './distract.js';
 
+/**
+ * `picks` marks the odd one out: identify mode is answered with buttons, so it has no
+ * placeholder and nothing to type. Everything that reads MODES has to allow for that --
+ * it is a third way to play rather than a third thing to type (docs/PLAN.md §10).
+ */
 const MODES = {
   countries: {
     placeholder: 'Name a country…',
@@ -20,13 +26,35 @@ const MODES = {
     label: 'Enter a capital city name',
     entry: (country) => `${country.capitals[0]} — ${country.name}`,
   },
+  identify: {
+    picks: true,
+    label: 'Pick the highlighted country',
+    entry: (country) => country.name,
+  },
 };
 
 /** Map coordinate space, fixed by the generator. */
 const BASE = { w: 2000, h: 1000 };
 const MAX_ZOOM = 16;
 
-/** idle -> running (first keystroke) -> finished (all found, or gave up). */
+/** How many buttons a question offers, answer included. 8d makes this a setting. */
+const OPTION_COUNT = 6;
+/** Tier the distractor engine builds sets at. Also 8d's to expose. */
+const TIER = 'hard';
+/** How much room around the country the frame leaves, as a multiple of its longest side. */
+const FRAME_PAD = 1.4;
+/**
+ * A country too small to read has to be framed against its neighbours instead, or the
+ * question is unanswerable rather than hard -- zoomed to fit, Saint Lucia is a pin in
+ * empty ocean (§10). Widen until this many other countries are in view.
+ */
+const CONTEXT_NEIGHBOURS = 4;
+/** Below this many CSS pixels across, a country's shape tells you nothing. */
+const READABLE_PX = 24;
+/** How long the marked-up answer stays before the next question. A tap skips the wait. */
+const BEAT = { right: 900, wrong: 2200 };
+
+/** idle -> running (first keystroke, or first question) -> finished. */
 const state = {
   mode: 'countries',
   scope: '', // '' is the whole world, otherwise a continent name
@@ -35,6 +63,12 @@ const state = {
   found: new Set(),
   startedAt: null,
   elapsedMs: 0,
+  // Identify mode only.
+  queue: [], // countries still to ask, in the order they will be asked
+  asking: null, // the country being asked, or null between games
+  answered: false, // true while the result of the current question is on screen
+  /** m49 -> the country picked instead, for the end-of-game "you confused X with Y". */
+  confusions: new Map(),
 };
 
 const view = { x: 0, y: 0, w: BASE.w, h: BASE.h };
@@ -49,6 +83,11 @@ let dragging = null;
 let highlight = null;
 /** m49 of the outlined country, '' for none. */
 let highlighted = '';
+/** A second overlay for the country identify mode is asking about. Separate from the
+ *  pointer highlight on purpose: they share the map, and one layer meant that moving the
+ *  mouse over the map wiped the question. */
+let asking = null;
+let askingShown = '';
 /** The list row tied to the outlined country, so it can be un-tied again. */
 let linkedRow = null;
 /** m49 of a country named because you clicked it, which a hover must not undo. */
@@ -61,7 +100,11 @@ const el = {
   tip: document.getElementById('map-tip'),
   entry: document.getElementById('entry'),
   answer: document.getElementById('answer'),
-  giveUp: document.getElementById('give-up'),
+  picker: document.getElementById('picker'),
+  prompt: document.getElementById('prompt'),
+  options: document.getElementById('options'),
+  /** Both rows carry one, since exactly one row is ever shown. Wired and rendered together. */
+  giveUps: document.querySelectorAll('.give-up'),
   learn: document.getElementById('learn'),
   timer: document.getElementById('timer'),
   scope: document.getElementById('scope'),
@@ -141,9 +184,8 @@ async function loadMap() {
     // Outlines are drawn into a layer of their own, above every country. SVG has no
     // z-index, so outlining a country in place leaves it overdrawn by its neighbours --
     // France's eastern border would sit under Germany.
-    highlight = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    highlight.id = 'highlight';
-    svg.append(highlight);
+    asking = overlay('asking');
+    highlight = overlay('highlight');
 
     applyView();
     enablePanZoom();
@@ -170,7 +212,7 @@ function applyView() {
   for (const pin of pins) {
     pin.node.setAttribute('transform', `translate(${pin.x},${pin.y}) scale(${scale})`);
   }
-  syncHighlight(); // an outlined pin holds a copy of the transform just rewritten
+  syncOverlays(); // an outlined pin holds a copy of the transform just rewritten
   el.map.classList.toggle('is-zoomed', view.w < BASE.w);
 }
 
@@ -309,11 +351,18 @@ function names(country, asked = false) {
   );
 }
 
-/** Outlines a country on the map: its shape, and for a micro-state its pin and leader. */
-function setHighlight(m49) {
-  if (!highlight || m49 === highlighted) return;
-  highlighted = m49;
-  highlight.replaceChildren();
+/** An empty overlay group appended last, so nothing can be drawn over it. */
+function overlay(id) {
+  const layer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  layer.id = id;
+  svg.append(layer);
+  return layer;
+}
+
+/** Copies a country into an overlay: its shape, and for a micro-state its pin and leader. */
+function drawInto(layer, m49) {
+  if (!layer) return;
+  layer.replaceChildren();
   if (!m49) return;
 
   for (const prefix of ['c', 'm', 'l']) {
@@ -321,17 +370,33 @@ function setHighlight(m49) {
     if (!source) continue;
     const copy = source.cloneNode(true);
     copy.removeAttribute('id'); // ids must stay unique -- paint() looks countries up by id
-    copy.removeAttribute('class'); // the copy is styled by #highlight alone
-    highlight.append(copy);
+    copy.removeAttribute('class'); // the copy is styled by its layer alone
+    layer.append(copy);
   }
 }
 
+/** Outlines whichever country is being pointed at. */
+function setHighlight(m49) {
+  if (!highlight || m49 === highlighted) return;
+  highlighted = m49;
+  drawInto(highlight, m49);
+}
+
+/** Marks the country identify mode is asking about. Survives the pointer moving. */
+function setAsking(m49) {
+  if (!asking || m49 === askingShown) return;
+  askingShown = m49;
+  drawInto(asking, m49);
+}
+
 /** A copied pin carries the transform it had when copied; zooming rewrites the original. */
-function syncHighlight() {
-  if (!highlighted) return;
-  const source = document.getElementById('m' + highlighted);
-  const copy = highlight?.querySelector('g');
-  if (source && copy) copy.setAttribute('transform', source.getAttribute('transform'));
+function syncOverlays() {
+  for (const [layer, m49] of [[highlight, highlighted], [asking, askingShown]]) {
+    if (!m49) continue;
+    const source = document.getElementById('m' + m49);
+    const copy = layer?.querySelector('g');
+    if (source && copy) copy.setAttribute('transform', source.getAttribute('transform'));
+  }
 }
 
 function showTip(country, clientX, clientY) {
@@ -388,25 +453,101 @@ function clearIdentify() {
 }
 
 /**
- * Frames a country. Zooming to its bounding box is wrong for island nations scattered
- * across the Pacific -- Kiribati's box is most of the map -- so anything with a pin is
- * centred on the pin instead, which the generator already placed on actual land.
+ * Centres the view on a point at a given width, in map units.
+ *
+ * The view is locked to 2:1, so only the width is ever chosen; clampView() keeps it
+ * inside the map and inside the zoom limits, which is also what stops a micro-state
+ * asking for a view a fraction of a unit wide.
  */
-function focusCountry(m49) {
-  const shape = document.getElementById('c' + m49);
-  if (!shape || !svg) return;
-
-  const pin = pins.find((p) => p.node.id === 'm' + m49);
-  const box = shape.getBBox();
-  const at = pin ? pin : { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  const span = pin ? 0 : Math.max(box.width, box.height * 2);
-
-  view.w = span * 2.2; // clamped below, so a micro-state lands at full zoom
+function frameOn(x, y, width) {
+  view.w = width;
   clampView();
-  view.x = at.x - view.w / 2;
-  view.y = at.y - view.h / 2;
+  view.x = x - view.w / 2;
+  view.y = y - view.h / 2;
   clampView();
   applyView();
+}
+
+/**
+ * How wide a view has to be to hold a country, in map units.
+ *
+ * Uses the generated bbox of the *largest landmass*, never getBBox(): the rendered shape
+ * is the union of every island, so Fiji, Kiribati and New Zealand all measure nearly the
+ * width of the map and framing them by it showed the whole world (docs/PLAN.md §11).
+ */
+function spanOf(country) {
+  const [x0, y0, x1, y1] = country.bbox;
+  return Math.max(x1 - x0, (y1 - y0) * 2, 1) * FRAME_PAD;
+}
+
+/**
+ * CSS pixels per map unit at a given view width -- how big things actually look.
+ *
+ * Measures the drawn map, not the <svg> box. preserveAspectRatio letterboxes a 2:1
+ * viewBox inside a squarer element, so on desktop the element is a good deal wider than
+ * the map inside it and using its width overstates how big everything is.
+ */
+function pixelsPerUnit(width) {
+  const box = svg?.getBoundingClientRect();
+  if (!box?.width) return 0;
+  return Math.min(box.width, box.height * 2) / width;
+}
+
+/** Countries whose anchor falls inside a view of this width centred on `country`. */
+function neighboursWithin(country, width) {
+  const [cx, cy] = country.anchor;
+  const halfW = width / 2;
+  const halfH = width / 4; // the view is 2:1
+  return active().filter(
+    (c) =>
+      c.m49 !== country.m49 &&
+      Math.abs(c.anchor[0] - cx) <= halfW &&
+      Math.abs(c.anchor[1] - cy) <= halfH
+  ).length;
+}
+
+/**
+ * The width to ask a country at.
+ *
+ * Framed tight, a country with a real shape is a fair question -- Slovakia is
+ * unmistakable. A country with no shape at map scale is not: zoomed to fit, Saint Lucia
+ * is a pin in empty ocean, which is unanswerable rather than hard. So when the shape will
+ * not read at the tight frame, widen until enough neighbours are in view to place it,
+ * which is how you actually answer "which of these Caribbean islands is it".
+ *
+ * Hard mode therefore shows *more* map for the small ones, not less (§10).
+ */
+function askingWidth(country) {
+  // Start at the tightest view that will actually be used. Asking for less is pointless
+  // -- clampView() will not go past MAX_ZOOM -- and judging readability at a width the
+  // map cannot reach says every country is legible, since anything is if you zoom far
+  // enough. That made the widening below dead code.
+  const tightest = BASE.w / MAX_ZOOM;
+  let width = Math.max(spanOf(country), tightest);
+
+  while (
+    width < BASE.w &&
+    Math.sqrt(country.area) * pixelsPerUnit(width) < READABLE_PX &&
+    neighboursWithin(country, width) < CONTEXT_NEIGHBOURS
+  ) {
+    width *= 1.5;
+  }
+  return Math.min(width, BASE.w);
+}
+
+/**
+ * Frames a country and outlines it. Used both by the answer list -- click a name, travel
+ * to the place -- and by identify mode to pose a question.
+ */
+function focusCountry(m49, width) {
+  const country = BY_M49.get(m49);
+  if (!country || !svg) return;
+
+  const pin = pins.find((p) => p.node.id === 'm' + m49);
+  const [bx, by] = country.anchor;
+  const at = pin ? { x: pin.x, y: pin.y } : { x: bx, y: by };
+
+  frameOn(at.x, at.y, width ?? spanOf(country));
   setHighlight(m49);
   el.map.scrollIntoView({ block: 'nearest' }); // stacked layout: the map may be off-screen
 }
@@ -481,6 +622,16 @@ function answerRow(country, missed = false) {
   label.textContent = MODES[state.mode].entry(country);
 
   li.append(mark, label);
+
+  // What you picked instead. Identify mode is the only thing that records this, so the
+  // typing modes are unaffected -- their confusions map is always empty.
+  const picked = missed ? state.confusions.get(country.m49) : null;
+  if (picked) {
+    const note = document.createElement('span');
+    note.className = 'picked';
+    note.textContent = `you said ${picked}`;
+    li.append(note);
+  }
   return li;
 }
 
@@ -557,6 +708,122 @@ function revealList() {
   el.answers.scrollTop = 0;
 }
 
+// --- Identify mode --------------------------------------------------------------------
+
+/**
+ * The map highlights a country and you pick its name from buttons (docs/PLAN.md §10).
+ *
+ * Each country is asked exactly once, which is what lets `found.size / active().length`
+ * keep the meaning it has in the typing modes -- so the list, the breakdown, the timer
+ * and the end-of-game reveal all carry over untouched.
+ */
+
+/** Holds the marked-up answer on screen between questions. A tap or a key skips it. */
+let beatTimer = null;
+
+function shuffled(items) {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+function startIdentify() {
+  state.queue = shuffled(active());
+  askNext();
+}
+
+function askNext() {
+  clearTimeout(beatTimer);
+  state.answered = false;
+
+  // The map has to be up before a country can be framed. Deferred to loadMap(), which
+  // starts the first question itself once the geometry is there.
+  if (!svg) return;
+
+  const next = state.queue.shift();
+  if (!next) {
+    finish(state.found.size === active().length);
+    return;
+  }
+
+  state.asking = next;
+  focusCountry(next.m49, askingWidth(next));
+  setHighlight(''); // the question has its own layer; leave the pointer's one free
+  setAsking(next.m49);
+  renderOptions(optionsFor(next, { tier: TIER, count: OPTION_COUNT, pool: active() }));
+  el.prompt.textContent = 'Which country is highlighted?';
+  render();
+  say('');
+}
+
+function renderOptions(options) {
+  el.options.replaceChildren();
+
+  options.forEach((country, i) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'option';
+    button.dataset.m49 = country.m49;
+
+    // Shown, not just bound: a shortcut nobody can see is a shortcut nobody uses, and
+    // the keyboard is the whole accessibility case for this mode.
+    const key = document.createElement('span');
+    key.className = 'key';
+    key.textContent = String(i + 1);
+    key.setAttribute('aria-hidden', 'true');
+
+    const name = document.createElement('span');
+    name.textContent = country.name;
+
+    button.append(key, name);
+    button.setAttribute('aria-keyshortcuts', String(i + 1));
+    el.options.append(button);
+  });
+}
+
+/**
+ * One shot per question: the pick stands, right or wrong, and the map moves on. Retrying
+ * would make `found` mean "eventually got it", which is not the number the counter and
+ * the continent breakdown are showing.
+ */
+function choose(m49) {
+  const answer = state.asking;
+  const picked = BY_M49.get(m49);
+  if (state.answered || !answer || !picked) return;
+
+  // The run starts on the first answer, not the first question -- the equivalent of the
+  // first keystroke. Posing a question is not committing to play, and starting the clock
+  // there would mean every change of region asked "this starts a new game" before the
+  // game had begun.
+  startRun();
+
+  const right = picked.m49 === answer.m49;
+  state.answered = true;
+
+  for (const button of el.options.children) {
+    button.classList.toggle('is-right', button.dataset.m49 === answer.m49);
+    button.classList.toggle('is-wrong', !right && button.dataset.m49 === picked.m49);
+  }
+
+  if (right) {
+    state.found.add(answer.m49);
+    el.answers.prepend(answerRow(answer));
+    say(`${answer.name} ✓`);
+  } else {
+    // Kept so the end-of-game list can say what you picked instead, which is the most
+    // useful thing this mode knows and costs a Map to remember.
+    state.confusions.set(answer.m49, picked.name);
+    say(`That was ${picked.name}. The answer is ${answer.name}.`);
+  }
+
+  el.prompt.textContent = 'Tap anywhere, or press Enter, to continue.';
+  render();
+  beatTimer = setTimeout(askNext, right ? BEAT.right : BEAT.wrong);
+}
+
 // --- Timer --------------------------------------------------------------------------
 
 function formatTime(ms) {
@@ -600,7 +867,7 @@ function stopTimer() {
 // --- Game ---------------------------------------------------------------------------
 
 function submit(raw) {
-  if (state.status === 'finished') return;
+  if (state.status === 'finished' || MODES[state.mode].picks) return;
   const result = evaluate(raw, state.mode, state.found);
 
   switch (result.type) {
@@ -668,9 +935,17 @@ function finish(won) {
   stopTimer();
   state.status = 'finished';
 
+  // Both states, not just the misses. Identify mode keeps the map neutral while playing
+  // -- a green neighbour is a hint, and one grey country in a green sea is the answer --
+  // so this is where its whole result gets painted (docs/PLAN.md §10). In the typing
+  // modes the found ones are already green and re-adding the class does nothing.
   for (const c of active()) {
-    if (!state.found.has(c.m49)) paint(c.m49, 'missed');
+    paint(c.m49, state.found.has(c.m49) ? 'found' : 'missed');
   }
+  state.asking = null;
+  setAsking('');
+  el.options.replaceChildren();
+  el.prompt.textContent = 'Every country, and what you picked instead.';
   revealList();
   render();
 
@@ -690,41 +965,60 @@ function say(message) {
 
 function render() {
   const finished = state.status === 'finished';
+  const picks = Boolean(MODES[state.mode].picks);
 
   el.count.textContent = String(state.found.size);
   el.total.textContent = String(active().length);
   el.listTitle.textContent = finished ? 'Result' : 'Found';
   el.listEmpty.hidden = state.found.size > 0 || finished;
 
+  // Exactly one answer row is ever shown: type into it, or pick from it.
+  el.entry.hidden = picks;
+  el.picker.hidden = !picks;
+
+  // Learning mode names any country you click, which here would simply hand over the
+  // answer. Locked off for as long as identify mode is selected.
+  el.learn.disabled = picks;
   el.learn.setAttribute('aria-pressed', String(state.learning));
   el.timer.classList.toggle('is-off', state.learning);
   el.timer.setAttribute('aria-label', state.learning ? 'Timer off in learning mode' : 'Elapsed time');
 
   el.answer.disabled = finished;
-  el.giveUp.textContent = finished ? 'Play again' : 'Give up';
-  el.giveUp.classList.toggle('is-primary', finished);
-  // Nothing to give up on before the first keystroke.
-  el.giveUp.disabled = state.status === 'idle';
+  for (const button of el.giveUps) {
+    button.textContent = finished ? 'Play again' : 'Give up';
+    button.classList.toggle('is-primary', finished);
+    // Nothing to give up on before the first keystroke, or the first question.
+    button.disabled = state.status === 'idle';
+  }
 
   renderBreakdown();
 }
 
 function reset() {
   stopTimer();
+  clearTimeout(beatTimer);
   state.status = 'idle';
   state.found.clear();
   state.startedAt = null;
   state.elapsedMs = 0;
+  state.queue = [];
+  state.asking = null;
+  state.answered = false;
+  state.confusions.clear();
 
   clearPaint();
   clearIdentify();
+  setAsking('');
   repaintScope();
   el.answers.replaceChildren();
+  el.options.replaceChildren();
   el.answer.value = '';
   el.timer.textContent = formatTime(0);
   render();
   say('');
-  el.answer.focus();
+
+  if (MODES[state.mode].picks) startIdentify();
+  else el.answer.focus();
 }
 
 /** Any change that alters the answer set has to start a fresh game. */
@@ -741,10 +1035,13 @@ function setMode(mode) {
   if (!MODES[mode] || mode === state.mode) return;
   change(() => {
     state.mode = mode;
+    // Identify has no clock to switch off and no click-to-name to offer, so learning
+    // mode goes with it rather than lingering as a setting that does nothing.
+    if (MODES[mode].picks) state.learning = false;
     for (const button of el.modes) {
       button.setAttribute('aria-selected', String(button.dataset.mode === mode));
     }
-    el.answer.placeholder = MODES[mode].placeholder;
+    if (MODES[mode].placeholder) el.answer.placeholder = MODES[mode].placeholder;
     el.answer.setAttribute('aria-label', MODES[mode].label);
   });
 }
@@ -754,7 +1051,7 @@ function setMode(mode) {
  * on or off starts a fresh game like any other change to what is being asked of you.
  */
 async function setLearning(on) {
-  if (on === state.learning) return;
+  if (on === state.learning || MODES[state.mode].picks) return;
   const ok = await change(() => {
     state.learning = on;
   });
@@ -809,12 +1106,53 @@ el.answer.addEventListener('input', () => {
   render();
 });
 
-el.giveUp.addEventListener('click', async () => {
-  if (state.status === 'finished') {
-    reset();
+for (const button of el.giveUps) {
+  button.addEventListener('click', async () => {
+    if (state.status === 'finished') {
+      reset();
+      return;
+    }
+    if (await ask('End the game and reveal the countries you missed?')) finish(false);
+  });
+}
+
+/**
+ * One handler for the whole picker, not one per button, so answering and skipping the
+ * beat cannot both fire from a single click: a click on an option bubbles to the panel,
+ * and two handlers would have marked the answer and then instantly moved past it.
+ */
+el.picker.addEventListener('click', (event) => {
+  if (event.target.closest('.give-up')) return;
+  if (state.status === 'finished') return;
+
+  if (state.answered) {
+    askNext(); // a tap anywhere skips the wait rather than sitting through it
     return;
   }
-  if (await ask('End the game and reveal the countries you missed?')) finish(false);
+  const option = event.target.closest('.option');
+  if (option) choose(option.dataset.m49);
+});
+
+// Number keys pick, Enter moves on. The map never has to be pointed at, which is the
+// accessibility case this mode makes and the typing modes cannot.
+document.addEventListener('keydown', (event) => {
+  if (!MODES[state.mode].picks || state.status === 'finished') return;
+  if (event.target.closest('input, select, textarea, dialog')) return;
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+  if (state.answered) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      askNext();
+    }
+    return;
+  }
+
+  const n = Number(event.key);
+  if (Number.isInteger(n) && n >= 1 && n <= el.options.children.length) {
+    event.preventDefault();
+    choose(el.options.children[n - 1].dataset.m49);
+  }
 });
 
 // Row -> map. Hovering outlines the country, clicking travels to it -- so the link works
@@ -862,5 +1200,9 @@ loadMap().then((ok) => {
   if (!ok) return;
   repaintScope();
   el.answer.disabled = false;
-  el.answer.focus();
+
+  // A question needs the geometry to frame, so the first one waits for the map rather
+  // than being posed against nothing. reset() before this point leaves the queue built.
+  if (MODES[state.mode].picks) askNext();
+  else el.answer.focus();
 });
