@@ -14,12 +14,24 @@
     <div class="modes" role="tablist" aria-label="Game mode">
       <button type="button" role="tab" class="mode" data-mode="countries" aria-selected="true">Countries</button>
       <button type="button" role="tab" class="mode" data-mode="capitals" aria-selected="false">Capitals</button>
+      <button type="button" role="tab" class="mode" data-mode="identify" aria-selected="false">Identify</button>
     </div>
 
     <label class="scope">
       <span class="scope-label">Region</span>
       <select id="scope" aria-label="Which countries to play">
         <option value="">Whole world</option>
+      </select>
+    </label>
+
+    <!-- Identify mode only: one control moves distractor tightness, framing and option
+         count together, because they are three faces of the same dial (PLAN §10). -->
+    <label class="scope" id="level-field" hidden>
+      <span class="scope-label">Level</span>
+      <select id="level" aria-label="Difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
       </select>
     </label>
 
@@ -59,6 +71,16 @@
           autocapitalize="off">
         <button type="button" class="give-up" id="give-up" disabled>Give up</button>
       </form>
+
+      <!--
+        Identify mode answers with buttons instead of the input, so it takes the entry
+        row's slot rather than sitting alongside it. Exactly one of the two is ever shown.
+      -->
+      <div class="picker" id="picker" hidden>
+        <p class="prompt" id="prompt">Which country is highlighted?</p>
+        <div class="options" id="options" role="group" aria-label="Pick the highlighted country"></div>
+        <button type="button" class="give-up" id="give-up-identify" disabled>Give up</button>
+      </div>
     </section>
 
     <aside class="list-panel" aria-label="Your answers">

@@ -6,7 +6,8 @@
   "description": "Dev-only tooling for geo-quiz. The game itself has no build step and no runtime dependencies.",
   "scripts": {
     "build-data": "node tools/build-data.mjs",
-    "serve": "python3 -m http.server 8080"
+    "serve": "python3 -m http.server 8080",
+    "test": "node --test \"tools/*.test.mjs\""
   },
   "devDependencies": {
     "d3-geo": "^3.1.1",

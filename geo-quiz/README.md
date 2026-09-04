@@ -20,6 +20,31 @@ you it is a spelling problem rather than just rejecting the answer.
 Use **Region** to play one continent at a time instead of all 195. The map scrolls to
 zoom and drags to pan; **Reset** or a double-click returns to the whole world.
 
+### Identify mode
+
+**Identify** is the third tab and needs no typing, which makes it the one that works on a
+phone. The map frames and marks one country and you pick its name from six buttons — or
+press 1–6, since the map never has to be pointed at.
+
+The wrong answers are not random. They come from the same corner of the world as the
+answer, matched on size and shape, and where a country has a name it is regularly confused
+with, that one is always in the set: Slovakia gets Slovenia, Niger gets Nigeria, Austria
+gets Australia. A Caribbean question is six Caribbean islands.
+
+**Level** sets how hard it is, and moves three things at once: how alike the wrong answers
+are, how many there are (4, 6 or 8), and how much map you get around the country. Easy
+gives you four countries from four continents and a wide view; hard gives you eight from
+one sub-region framed tight. Medium is the default.
+
+One guess per country, and the map stays grey while you play — a green neighbour would be
+a hint — so the whole result is painted at the end, where each miss also records what you
+picked instead.
+
+Countries too small to have a shape at map scale are framed against their neighbours
+instead of zoomed into, because zoomed to fit, Saint Lucia is a pin in empty ocean. You
+answer those from where they sit in the island chain, which is how you actually know them.
+That overrides the level: a tight frame on Tuvalu would be unanswerable, not hard.
+
 ### Learning mode
 
 The **Learn** toggle in the nav turns the quiz into something you can browse. The clock
@@ -46,6 +71,14 @@ fetch `data/world.svg`, so it needs to be served over HTTP rather than opened fr
 npm run serve      # http://localhost:8080
 ```
 
+The answer matcher and the identify-mode distractor engine have tests, which need no
+browser and no network:
+
+```bash
+npm install
+npm test
+```
+
 ## Regenerating the map and answer data
 
 `data/world.svg` and `data/countries.js` are **generated and committed**. You only need
@@ -61,9 +94,12 @@ capitals, ODbL), joined on the UN M49 code. The generator asserts 195/195 countr
 geometry and a capital, and fails the build if an alias table references an unknown
 country or collides with a real name.
 
-Hand-maintained answer data lives in [`tools/aliases.mjs`](tools/aliases.mjs) — country
-aliases, alternate capitals, and the ambiguous/rejected input tables. Edit that, not the
-generated files.
+Hand-maintained data lives in `tools/`, not in the generated files:
+[`tools/aliases.mjs`](tools/aliases.mjs) for country aliases, alternate capitals and the
+ambiguous/rejected input tables, and [`tools/regions.mjs`](tools/regions.mjs) for the
+18 sub-continental groups. The generator asserts both: an unknown country name, a country
+in two regions or none, a region spanning two continents, or a region shadowing a
+continent's name all fail the build.
 
 ### Two quirks in the source geometry
 

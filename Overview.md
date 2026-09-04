@@ -36,7 +36,11 @@ A geography game: name all 195 countries or their capitals from memory, against 
 - **Play:** https://matthewbrett.github.io/random-stuff/geo-quiz/
 - **Tech:** Vanilla HTML/CSS/JS, no build step and no runtime dependencies
 - **Features:**
-  - Two modes — name countries, or name capitals
+  - Three modes — name countries, name capitals, or identify a highlighted country
+  - Identify mode needs no typing, so it plays on a phone: pick from buttons, or press
+    1–8, with wrong answers drawn from the same region and matched on size, shape and name
+  - Three difficulty levels, moving distractor similarity, option count and how much map
+    you see around the country together
   - World map with per-country borders; correct answers fill green, missed ones red
   - Map pins for the 34 countries too small to see at world scale
   - Strict matching with common abbreviations (`USA`, `UK`, `UAE`) and spelling hints
