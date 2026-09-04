@@ -61,9 +61,12 @@ capitals, ODbL), joined on the UN M49 code. The generator asserts 195/195 countr
 geometry and a capital, and fails the build if an alias table references an unknown
 country or collides with a real name.
 
-Hand-maintained answer data lives in [`tools/aliases.mjs`](tools/aliases.mjs) — country
-aliases, alternate capitals, and the ambiguous/rejected input tables. Edit that, not the
-generated files.
+Hand-maintained data lives in `tools/`, not in the generated files:
+[`tools/aliases.mjs`](tools/aliases.mjs) for country aliases, alternate capitals and the
+ambiguous/rejected input tables, and [`tools/regions.mjs`](tools/regions.mjs) for the
+18 sub-continental groups. The generator asserts both: an unknown country name, a country
+in two regions or none, a region spanning two continents, or a region shadowing a
+continent's name all fail the build.
 
 ### Two quirks in the source geometry
 

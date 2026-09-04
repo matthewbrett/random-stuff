@@ -5,8 +5,9 @@ You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
 **Status:** Phases 0–7 complete and wired into the deploy pipeline; publishes to
-`/random-stuff/geo-quiz/` on merge to `main`. Phase 8 (identify mode, §10) is designed
-and not yet built.
+`/random-stuff/geo-quiz/` on merge to `main`. Phase 8 (identify mode, §10) is designed;
+8a is built — the data the engine needs is generated and asserted — and 8b–8d are not
+started, so the mode is not yet playable.
 **Last Updated:** 2026-09-04
 
 ---
@@ -144,16 +145,23 @@ micro-state has a pin, and no pin is clipped.
 · grafted Tuvalu geometry from the 10m dataset
 ✓ 195/195 countries, all with geometry and a capital
   data/world.svg     195 playable + 45 inert paths, 34 pins (11 nudged), 790 KB
-  data/countries.js  217 accepted country spellings, 24 KB (5 KB gzipped)
+  data/countries.js  217 accepted country spellings, 47 KB (8 KB gzipped)
+  18 sub-regions, all inside one continent; 195 anchors and shape descriptors
 ```
+
+`countries.js` grew from 27 KB to 47 KB raw (5 KB to 8 KB gzipped) when Phase 8a added
+the regions, anchors and shape descriptors. `world.svg` is byte-identical across that
+change — no geometry was touched.
 
 - `data/world.svg` — `<path id="c250">` per country, in four groups: `#countries`
   (playable), `#other` (territories and disputed areas, drawn but inert), `#markers`
   (micro-state pins, `<g id="m336">`), `#leaders` (leader lines, `<line id="l336">`)
-- `data/countries.js` — 195 entries `{ m49, name, official, capitals[], aliases[], micro }`
+- `data/countries.js` — 195 entries `{ m49, name, official, capitals[], aliases[],
+  continent, region, micro, anchor, area, aspect, compact, pieces }`. The last six landed
+  with Phase 8a; everything from `region` on exists for the identify-mode engine (§10)
 
-Hand-maintained answer data is kept separately in `tools/aliases.mjs` so regenerating
-never clobbers it.
+Hand-maintained data is kept separately so regenerating never clobbers it:
+`tools/aliases.mjs` for answer spellings, `tools/regions.mjs` for the sub-region table.
 
 Note: the npm registry is reachable from this environment but `unpkg.com` is blocked by
 the network policy, so fetch source data via `npm pack`, not a CDN URL.
@@ -746,13 +754,37 @@ tool can tell you and it costs a `Map` and a sort.
 
 | Step | Deliverable |
 |---|---|
-| 8a | Sub-region table + shape descriptors + anchors in `build-data.mjs`, with both invariants asserted |
+| **8a** ✓ | Sub-region table + shape descriptors + anchors in `build-data.mjs`, with both invariants asserted |
 | 8b | `distract.js` — the scoring engine, standalone and testable with no UI. The sample sets above are the fixtures |
 | 8c | Question loop, option grid, framing. Countries only |
 | 8d | Difficulty picker wired to tightness, framing and count together |
 
 8d comes last deliberately: where the line between *hard* and *unfair* actually falls is
 not knowable until the thing is played.
+
+### Phase 8a notes
+
+The table lives in `tools/regions.mjs`, keyed by country name rather than M49 — it is a
+table a human reads, and the generator asserts every name resolves, so a typo fails the
+build instead of quietly dropping a country out of the engine.
+
+Five failure modes were tested by deliberately breaking the table, and each is caught with
+its own message: an unknown country name, a country in two regions, a country in none, a
+region spanning two continents, and a region shadowing a continent's name. That last one
+reports *"region "North America" shares a continent's name but holds 3 of its 23"*, which
+is precisely the bug that prompted the invariant.
+
+Two things worth knowing if you touch `describe()`:
+
+- **Everything except `area` measures the largest landmass only.** That is what makes the
+  descriptor antimeridian-safe without special-casing: Fiji, Kiribati and New Zealand have
+  islands against both edges of the map, so any measure spanning all their pieces is
+  meaningless. `focusCountry()` still has this bug (§11); the descriptor does not.
+- **`aspect` needs its floor on both sides of the ratio.** With the floor on the divisor
+  alone, a country narrower than half a unit reports an aspect below 1 — Vatican City came
+  out at 0.11 — which a max/min ratio can never legitimately be, and the engine's
+  `log(aspect)` then swings the wrong way. Floored both ways it reads 1.0: too small to
+  tell, so call it square.
 
 ---
 

@@ -21,6 +21,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 import { COUNTRY_ALIASES, CAPITAL_ALIASES, AMBIGUOUS, REJECTED } from './aliases.mjs';
+import { REGIONS } from './regions.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = (p) => JSON.parse(readFileSync(join(ROOT, 'node_modules', p), 'utf8'));
@@ -130,6 +131,8 @@ const markers = [];
 const leaders = [];
 const pins = [];
 const micro = new Set();
+/** m49 -> { anchor, area, aspect, compact, pieces }, for every playable country. */
+const shapes = new Map();
 
 const r0 = (n) => n.toFixed(0);
 const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
@@ -162,6 +165,10 @@ for (const [m49, f] of [...geoms].sort(([a], [b]) => a.localeCompare(b))) {
   }
 
   playablePaths.push(el);
+
+  // Every country gets an anchor and a shape descriptor, not just the pinned ones --
+  // the identify-mode engine scores similarity across all 195 (docs/PLAN.md §10).
+  shapes.set(m49, describe(f));
 
   if (path.area(f) < MICRO_AREA) {
     const [ax, ay] = anchorOf(f);
@@ -200,6 +207,8 @@ const svg = [
 
 // --- Emit the answer set ----------------------------------------------------------
 
+const regionOf = regionIndex(new Map(target.map((c) => [c.name.common, c])));
+
 const countries = target
   .map((c) => {
     const m49 = c.ccn3;
@@ -211,7 +220,9 @@ const countries = target
       capitals,
       aliases: COUNTRY_ALIASES[m49] ?? [],
       continent: continentOf(c),
+      region: regionOf.get(m49),
       micro: micro.has(m49),
+      ...shapes.get(m49),
     };
   })
   .sort((a, b) => a.name.localeCompare(b.name));
@@ -249,6 +260,39 @@ for (const name of ['Australia', 'Russia', 'Canada', 'Brazil', 'China', 'India',
   const c = countries.find((x) => x.name === name);
   assert(c, `expected ${name} in the country set`);
   assert(!c.micro, `${name} was classified as a micro-state -- its geometry is wrong`);
+}
+
+// --- Sub-region invariants (docs/PLAN.md §10) -------------------------------------
+
+// Every country must be in exactly one region. regionIndex() already rejects unknown
+// names and doubles; this catches the other direction, a country nobody listed.
+const unregioned = countries.filter((c) => !c.region);
+assert(
+  unregioned.length === 0,
+  `no region for: ${unregioned.map((c) => c.name).join(', ')}`
+);
+
+// Every country in a region must share its continent. A region that straddles two
+// breaks the medium difficulty tier, which is defined as "same continent, different
+// region" -- for a straddling region that phrase names two different sets depending on
+// which member you started from. "Russia, Caucasus & Central Asia" did exactly this.
+for (const region of new Set(countries.map((c) => c.region))) {
+  const members = countries.filter((c) => c.region === region);
+  const continents = [...new Set(members.map((c) => c.continent))];
+  assert(
+    continents.length === 1,
+    `region "${region}" spans ${continents.join(' and ')}: ` +
+      members.map((c) => `${c.name} (${c.continent})`).join(', ')
+  );
+
+  // A region may share a continent's name only if it holds exactly that continent.
+  // Oceania and South America legitimately do; "North America" for Canada/US/Mexico did
+  // not, and would have put two different meanings behind one label in the picker.
+  const sameName = countries.filter((c) => c.continent === region);
+  assert(
+    sameName.length === 0 || sameName.length === members.length,
+    `region "${region}" shares a continent's name but holds ${members.length} of its ${sameName.length}`
+  );
 }
 
 // Every alias key must correspond to a country actually in the set, or it is silently
@@ -303,6 +347,7 @@ const kb = (s) => `${(s.length / 1024).toFixed(0)} KB`;
 console.log(`✓ ${countries.length}/195 countries, all with geometry and a capital`);
 console.log(`  data/world.svg     ${playablePaths.length} playable + ${otherPaths.length} inert paths, ${markers.length} pins (${leaders.length} nudged), ${kb(svg)}`);
 console.log(`  data/countries.js  ${seen.size} accepted country spellings, ${kb(js)}`);
+console.log(`  ${new Set(countries.map((c) => c.region)).size} sub-regions, all inside one continent; 195 anchors and shape descriptors`);
 
 /**
  * The source data has five UN regions, but "Americas" as a single bucket of 35 is too
@@ -312,6 +357,83 @@ console.log(`  data/countries.js  ${seen.size} accepted country spellings, ${kb(
 function continentOf(c) {
   if (c.region !== 'Americas') return c.region;
   return c.subregion === 'South America' ? 'South America' : 'North America';
+}
+
+/**
+ * Splits a feature into its polygons, each as a Feature of its own so d3's path
+ * measurements apply to it alone. Largest first.
+ */
+function landmasses(f) {
+  const polys =
+    f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates];
+  return polys
+    .map((coordinates) => {
+      const poly = { type: 'Feature', geometry: { type: 'Polygon', coordinates } };
+      return { poly, area: path.area(poly) };
+    })
+    .sort((a, b) => b.area - a.area);
+}
+
+/**
+ * What a country looks like on the map, for the identify-mode distractor engine
+ * (docs/PLAN.md §10). Measured on the *projected* geometry rather than the geographic,
+ * because "these two look alike" has to mean alike as drawn.
+ *
+ * Everything but `area` describes the largest landmass only, which also makes the
+ * descriptor antimeridian-safe for free: Fiji, Kiribati and New Zealand have islands on
+ * both edges of the map, so any measure spanning all of their pieces is meaningless.
+ */
+function describe(f) {
+  const parts = landmasses(f);
+  const area = parts.reduce((sum, p) => sum + p.area, 0);
+  const biggest = parts[0];
+  const [[x0, y0], [x1, y1]] = path.bounds(biggest.poly);
+  const w = x1 - x0;
+  const h = y1 - y0;
+  const perimeter = path.measure(biggest.poly);
+  const [ax, ay] = anchorOf(f);
+
+  return {
+    // Rounded hard: the engine only ever compares these, and log-area at three
+    // significant figures is far finer than "do these two feel similar".
+    anchor: [roundTo(ax, 0), roundTo(ay, 0)],
+    area: roundTo(area, 3),
+    // How elongated -- Chile and Norway score high, Poland and Uruguay low. The floor
+    // goes on BOTH sides, not just the divisor: with it on the divisor alone a country
+    // smaller than half a unit reports an aspect below 1, which a max/min ratio can
+    // never legitimately be, and the engine's log(aspect) then swings negative. Floored
+    // both ways a sub-unit country reads 1.0 -- too small to tell, so call it square.
+    aspect: roundTo(Math.max(w, h, 0.5) / Math.max(Math.min(w, h), 0.5), 2),
+    // 4πA/P²: 1.0 is a perfect circle, and a ragged coastline drives it toward 0.
+    compact: perimeter > 0 ? roundTo((4 * Math.PI * biggest.area) / (perimeter * perimeter), 3) : 0,
+    // Islands that actually read as separate at this scale, not every rock.
+    pieces: parts.filter((p) => p.area > 0.02 * area).length,
+  };
+}
+
+/**
+ * Trims a single number. Not the path-string `round` above, which rewrites every
+ * coordinate in a `d` attribute. Declared as a function so it hoists above describe().
+ */
+function roundTo(n, dp) {
+  return Number.isFinite(n) ? +n.toFixed(dp) : 0;
+}
+
+/** m49 -> sub-region name, inverted from the hand-maintained table in regions.mjs. */
+function regionIndex(byName) {
+  const index = new Map();
+  for (const [region, names] of Object.entries(REGIONS)) {
+    for (const name of names) {
+      const country = byName.get(name);
+      assert(country, `REGIONS lists "${name}" in ${region}, which is not one of the 195`);
+      assert(
+        !index.has(country.ccn3),
+        `"${name}" is in two regions (${region} and ${index.get(country.ccn3)})`
+      );
+      index.set(country.ccn3, region);
+    }
+  }
+  return index;
 }
 
 /**
