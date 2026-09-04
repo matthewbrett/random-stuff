@@ -4,9 +4,10 @@ A front-end-only web game for learning the world's countries and their capitals.
 You type names from memory against a world map; correct answers turn green and
 join a running list. A timer measures the whole attempt.
 
-**Status:** Complete and wired into the deploy pipeline. Publishes to
-`/random-stuff/geo-quiz/` on merge to `main`.
-**Last Updated:** 2026-08-07
+**Status:** Phases 0–7 complete and wired into the deploy pipeline; publishes to
+`/random-stuff/geo-quiz/` on merge to `main`. Phase 8 (identify mode, §10) is designed
+and not yet built.
+**Last Updated:** 2026-09-04
 
 ---
 
@@ -94,6 +95,11 @@ Rendered with `geoNaturalEarth1` fitted to a 1000×500 viewBox:
 110m is ruled out — only 177 shapes, so ~18 of our 195 countries have no geometry at
 all. 50m rounded to integer coordinates is the sweet spot: full coverage, and 82 KB over
 the wire once GitHub Pages gzips it.
+
+Those figures are from the 1000×500 exploration. The map actually shipped is fitted to
+**2000×1000**, which measures **789 KB raw, 138 KB gzipped**. Quote that number, not the
+82 KB above, when weighing anything against the size budget — see §11 for what higher
+precision would cost on top of it.
 
 ### The micro-state problem
 
@@ -412,6 +418,7 @@ state, so it survives *Play again*.
 | **5** ✓ | Micro-state pins ✓, zoom/pan ✓, continent scoping ✓, reduced motion ✓, map↔list cross-highlight ✓ |
 | **6** ✓ | `README.md`, `Overview.md` entry, `index.html` card, deploy workflow line |
 | **7** ✓ | Learning mode: clock off, click-to-name (§6) |
+| **8** | Identify mode: highlight a country, pick its name from buttons (§10). Depends on the map fixes in §11 |
 
 Phase 0 is complete (§3). Phase 1 is complete: `index.html`, `styles.css` and `app.js`
 render the nav, the neutral map and the (inert) entry and list panels.
@@ -519,6 +526,13 @@ Held back to keep the first version small — each is easy to add later:
 - Hints, per-continent games, streaks
 - Flags mode
 - Sharing a result card
+- **Locate mode** — prompt a name, tap the country on the map. The obvious mobile mode,
+  measured and deferred: at world zoom on a phone 189 of 195 countries are smaller than
+  the 24px minimum touch target, and the median one needs 12× zoom to reach 44px. It is
+  not unbuildable, but it needs regional framing, screen-sized pins, a tolerant hit test
+  and an aim-then-confirm gesture before it is playable — where identify mode (§10)
+  reaches the same goal, a phone-first mode with no typing, with none of that. Full
+  measurements in §11
 - **Reveals as a currency** during a *timed* game: a fixed budget of them, or one bought
   for a time penalty. Learning mode (§6) now covers wanting to read the map rather than
   be tested by it, and it sidesteps the pricing question by switching the clock off
@@ -543,3 +557,283 @@ All the open questions from the first draft are now settled:
 | Pricing a reveal | Not priced — learning mode switches the clock off instead. Reveals as a timed currency stay a later idea (§8) |
 | Matching strictness | Exact after normalisation; no fuzzy matching (§5) |
 | Alias policy | Abbreviations, English exonyms, former official names. No `America`, `Britain`, `Holland` (§5) |
+
+### Identify mode decisions (design in §10)
+
+| Question | Decision |
+|---|---|
+| Tap the map, or pick a name? | Pick a name. Tapping was measured and deferred — see §8 and §11 |
+| Option count | Six by default, 4 / 6 / 8 selectable. Tightness matters more than count (§10) |
+| Difficulty | A picker, not adaptive. Adaptive is a later idea |
+| Framing vs difficulty | Bound together — one dial, with the shape clamp overriding (§10) |
+| Capitals variant | Not now. Countries only for the first cut |
+| Mexico | Grouped with Canada and the US in `Northern America`. UN M49 would put it in Central America; either works for the engine |
+
+---
+
+## 10. Identify mode (Phase 8)
+
+A third way to play, aimed squarely at the phone: **the map frames and highlights one
+country, and you pick its name from a short list of buttons.** No typing, no precise
+tapping, and — unlike everything proposed for locate mode (§8) — no fight with the size
+of the target.
+
+It is recognition rather than recall, so it complements the typing modes rather than
+replacing them. It is also the only mode that is fully keyboard-operable, since the
+answers are buttons: 1–8 select, and the map never needs to be pointed at.
+
+### The loop
+
+The active set is shuffled into a queue and each country is asked exactly once, so
+`found.size / active().length` keeps precisely the meaning it has in the typing modes.
+That is what lets the list panel, the continent breakdown, the timer, Give up, Play again
+and the end-of-game reveal carry over untouched.
+
+1. Frame the country, highlight it, render N option buttons.
+2. Tap one. Right: the country fills green and joins the list. Wrong: the button you
+   chose goes red, the correct one goes green, both are named.
+3. Advance. **One shot per question** — no retries, no elimination.
+4. The run ends when the queue empties or you give up, exactly as it does today.
+
+The option grid takes the `.entry` row's slot. Measured on a 390px phone: two columns,
+buttons 181 × 58px, six of them 210px tall in total — comfortably past the 44px touch
+minimum, and *Saint Vincent and the Grenadines*, the longest name at 32 characters, wraps
+to two lines without breaking the box. Eight fit in ~280px, twelve in ~420px, so layout is
+not what caps the option count.
+
+**Open:** how the mode is selected. It is a third *way to play* rather than a third answer
+type, but unlike Learn it is not orthogonal — it replaces the input entirely, and for now
+it only asks countries. A third tab beside Countries and Capitals is the obvious fit and
+the least new furniture in an already-crowded nav; it does mean `MODES` stops being a
+uniform map, since identify has no `placeholder` or `entry`.
+
+### Three dials, and the one that inverts
+
+| Dial | Easy → Hard |
+|---|---|
+| Distractor tightness | different continents → same continent → same sub-region → sub-region plus shape, size and name matched |
+| Map framing | wide context → tight on the country |
+| Option count | 4 → 6 → 8 |
+
+Raw guess rates run 25% / 17% / 13% for four, six and eight options, but that only bites
+when the distractors are plausible. Against one-per-continent distractors anyone who
+roughly knows where things are scores near 100% at *any* count. **Count sets the floor;
+tightness sets the difficulty.** Six is the default because it is enough to stop a coin
+flip while still being read at a glance.
+
+The framing dial is the one that surprises. Zoomed to fit, Slovakia is a crisp,
+unmistakable shape — hard but entirely fair. Zoomed to fit, **Saint Lucia is a pin in
+empty ocean**: not hard, unanswerable. Framed instead on the Lesser Antilles it becomes
+fair again, because the answer comes from position in the island chain.
+
+So the clamp, which matters more than the dial:
+
+> **A country with no usable shape must never be framed tight.** If it renders below the
+> pin threshold, the frame is widened until it holds at least a handful of neighbours.
+
+Measured: **7 of the 13 Caribbean countries have under 3 square units of geometry** —
+Antigua, Barbados, Dominica, Grenada, Saint Kitts, Saint Lucia and Saint Vincent are 1–2
+unit blobs. Most of Oceania is the same. For those, hard mode shows *more* map, not less.
+This is the single easiest thing in the mode to build backwards.
+
+### The distractor engine
+
+A confusability score between two countries, blended from four parts:
+
+```
+0.45 · proximity   same sub-region 1.0 / same continent 0.5 / otherwise 0
+0.25 · size        1 − |log₁₀(areaA) − log₁₀(areaB)| / 2
+0.20 · shape       compactness (4πA/P²), aspect ratio, landmass count
+0.10 · name        Damerau distance ≤ 2, or a shared significant token
+```
+
+The name term is close to `match.js`'s `isNearMiss` but **must not reuse it as it
+stands**. That function is deliberately tight — one insertion, deletion, substitution or
+adjacent transposition — because §5 uses it to phrase spelling hints, where being loose
+would risk crediting the wrong country. Run against the classic confusable pairs it
+catches only two of eight:
+
+```
+yes  iran / iraq          NO   slovakia / slovenia     NO   mali / malawi
+yes  zambia / gambia      NO   niger / nigeria         NO   guinea / guyana
+                          NO   austria / australia     NO   dominica / dominican republic
+```
+
+The distractor engine needs a **distance of 2**, plus a shared-significant-token check to
+catch the pairs edit distance never will — Guinea / Equatorial Guinea, Dominica /
+Dominican Republic, Sudan / South Sudan. So: generalise `isNearMiss` to take a maximum
+distance, export it (it is currently module-private), and add the token check alongside.
+The one-edit behaviour §5 depends on stays as the default.
+
+Two rules that pure sampling gets wrong, both found by running the prototype:
+
+- **Force the name twin.** Slovenia sat in Slovakia's candidate band and lost the random
+  draw. If a twin exists it is seated deterministically, not sampled.
+- **Region first, then degrade.** Fill from the sub-region, fall through to the continent,
+  then to nearest-by-anchor. Required: East Asia offers only 4 in-region distractors and
+  Northern America only 2, so neither can fill a six-set alone.
+
+Sample output with both rules applied — these double as the engine's test fixtures:
+
+```
+Slovakia    [Slovakia] · Czechia · Bosnia and Herzegovina · Hungary · Albania · Slovenia
+Niger       Nigeria · Mali · Mauritania · [Niger] · Ivory Coast · Burkina Faso
+Guinea      Senegal · [Guinea] · Equatorial Guinea · Burkina Faso · Ghana · Ivory Coast
+Austria     Netherlands · [Austria] · Switzerland · Belgium · Germany · Australia
+Dominica    Barbados · Saint Vincent and the Grenadines · [Dominica] · Saint Lucia ·
+            Saint Kitts and Nevis · Antigua and Barbuda
+Nauru       Tonga · Marshall Islands · Micronesia · Kiribati · [Nauru] · Palau
+```
+
+Austria pulling in Australia is the engine working as intended. Dominica's set is the
+case that *must* get a context frame or it is a coin flip.
+
+### Sub-regions
+
+The engine needs a finer grain than the six continents. Eighteen sub-regions, each
+wholly inside one continent:
+
+| Continent | Sub-regions |
+|---|---|
+| Africa | Central & East Africa 18 · West Africa 16 · Southern Africa 14 · North Africa 6 |
+| Asia | Middle East 15 · Southeast Asia 11 · South Asia 8 · Caucasus & Central Asia 8 · East Asia 5 |
+| Europe | Eastern Europe & Russia 17 · Northern Europe 10 · Western Europe 10 · Southern Europe 8 |
+| North America | Caribbean 13 · Central America 7 · Northern America 3 |
+| Oceania | Oceania 14 |
+| South America | South America 12 |
+
+Two invariants the generator must assert, both of which caught a real bug in the first
+draft of this table:
+
+- **No sub-region name may collide with a continent name over a different set.** The
+  first draft called Canada/US/Mexico "North America", while the `continent` field uses
+  that name for all 23 — Canada, the US, Mexico, the 7 Central American countries and the
+  13 Caribbean ones. Renamed to `Northern America`.
+- **No sub-region may span two continents.** "Russia, Caucasus & Central Asia" did:
+  Russia's continent is Europe, the other eight are Asia. That silently breaks the medium
+  tier, which is defined as *same continent, different sub-region*. Split into
+  `Eastern Europe & Russia` and `Caucasus & Central Asia`.
+
+Region membership does not dictate the round's frame — frames are hand-tuned constants,
+which §11 shows is forced anyway. Russia sitting in Eastern Europe therefore costs that
+round's frame nothing.
+
+### Data the mode adds
+
+Per country in `countries.js`, roughly 40 bytes each and ~8 KB in total, all derived from
+geometry `build-data.mjs` already holds. No new sources:
+
+- `region` — the sub-continental group above
+- `anchor` `[x, y]` — already computed for the 34 pins, extended to all 195
+- `area`, `aspect`, `compact`, `pieces` — the shape descriptor the engine scores on
+
+### Two rules that stop the map leaking the answer
+
+- **Do not paint progress on the map during play.** In this mode a green neighbour is a
+  hint, and a lone grey country in a green sea gives the answer away outright. Keep the
+  map neutral while playing and paint the whole result at the end.
+- **Pins narrow the field.** If only the 34 micro-states carry pins, a pin-highlighted
+  target is instantly one of 34. The dynamic pin rule in §11 dilutes this by pinning
+  whatever is too small in the *current* view rather than a fixed list.
+
+### Worth having, nearly free
+
+Every wrong answer records which distractor was chosen, so the end of a run can say
+*"you confused Slovakia with Slovenia twice"*. That is the most useful thing a learning
+tool can tell you and it costs a `Map` and a sort.
+
+### Build order
+
+| Step | Deliverable |
+|---|---|
+| 8a | Sub-region table + shape descriptors + anchors in `build-data.mjs`, with both invariants asserted |
+| 8b | `distract.js` — the scoring engine, standalone and testable with no UI. The sample sets above are the fixtures |
+| 8c | Question loop, option grid, framing. Countries only |
+| 8d | Difficulty picker wired to tightness, framing and count together |
+
+8d comes last deliberately: where the line between *hard* and *unfair* actually falls is
+not knowable until the thing is played.
+
+---
+
+## 11. Map interaction — measured limits
+
+Everything here was measured against the shipped map, on a 390×844 phone viewport (the
+map renders 374×187 there, so **0.19 px per map unit**) and a ~1100px desktop map panel.
+Recorded because it governs both Phase 8 and anything that revisits locate mode.
+
+### Tap targets
+
+Effective target size is the square root of the largest landmass's area.
+
+| | median target | under 24px | under 44px |
+|---|---|---|---|
+| Phone, world zoom | 3.7px | 189/195 | 194/195 |
+| Desktop, world zoom | 10.8px | 133/195 | 176/195 |
+
+Belgium is 3.4 × 2.2px on a phone, Switzerland 4.1 × 2.2, Israel 1.5 × 4.7. The median
+country needs **12× zoom** to reach a 44px target; the ceiling is 16×. Framing each of the
+18 sub-regions of §10 is the biggest single lever — it takes the under-24px count from 189
+to 112 on a phone and from 133 to 51 on desktop — but it cannot rescue the archipelagos:
+framed on its own region, the Caribbean still has 12 of 13 under 24px and Oceania 13 of 14.
+
+Those frames have to be hand-tuned constants, not computed bounding boxes. A continent's
+bbox is dominated by its outliers — Europe's reaches the Urals, North America's spans
+Canada to Trinidad, Oceania's crosses the antimeridian — so all three fit at barely more
+than 1×, which is no better than the whole-world view.
+
+### Pins are already screen-space, and sized for a desktop
+
+`applyView()` counter-scales the pins so they hold a constant size on screen at every
+zoom. That size is 20 map units, which was tuned against a ~1100px map: **11px on
+desktop, but 3.7 × 5.6px on a phone** (measured, not derived). Making the pin a constant
+CSS size rather than a constant map size is a small change to `applyView()` and roughly
+triples it on a phone. It improves the existing modes too — a 3.7px green dot is thin
+feedback for finding Malta.
+
+The natural follow-on is to make the *rule* dynamic as well: pin whatever renders below
+about 24px in the current view, rather than the fixed `micro` flag. Simulated across the
+18 regional frames that is 112 pins in total, at most 13 in any one region, and at worst
+28% of the screen covered — it fits, and the dense regions need the leader lines the
+generator already emits.
+
+One thing checked because it would have been a silent killer: the pin path carries an
+`evenodd` hole in the bulb, but hit-testing the bulb centre at high zoom does resolve to
+the pin. The hole is not a dead zone.
+
+### Three defects this surfaced
+
+- **Pinch-to-zoom does not exist.** `enablePanZoom()` tracks a single pointer, and
+  `touch-action: none` stops the browser doing it instead. Verified by dispatching two
+  touch pointers: the viewBox does not move. On a phone the only zoom is the +/− buttons,
+  which zoom about the centre.
+- **Double-tap zooms all the way out.** `dblclick` is bound to `resetView()`, and a
+  double-tap fires `dblclick`. The instinctive gesture does the opposite of what is
+  wanted. Reset belongs on the button alone.
+- **`focusCountry()` breaks across the antimeridian.** It frames non-pinned countries by
+  bounding box, and Fiji spans x 0→1992, Kiribati 19→1975 and New Zealand 33→1928 (the
+  Chatham Islands wrap). Clicking any of the three in the answer list travels to the whole
+  world instead of to the country. Any framing code added for Phase 8 inherits this unless
+  it is fixed.
+
+### Higher resolution does not help, and costs
+
+Rebuilt four ways and measured, counting countries whose geometry is negligible *relative
+to a fixed 2000-wide reference*, so the variants are comparable:
+
+| Variant | Raw | Gzipped | Countries with negligible geometry |
+|---|---|---|---|
+| **shipped — 2000 wide, 0dp** | 789 KB | 138 KB | 13 |
+| 2000 wide, 1dp | 1146 KB | 356 KB | 13 |
+| 8000 wide, 0dp | 884 KB | 275 KB | 13 |
+| 8000 wide, 0dp + 10m source for the 35 smallest | 931 KB | 281 KB | 13 |
+
+**The count never moves.** Integer rounding at 2000 wide does collapse ten countries to
+degenerate paths, but restoring them changes nothing, because the constraint is real area
+rather than encoding: Vatican City is 0.44 km², which is 0.002 units across on a
+2000-unit world. No precision makes that tappable, and 1dp costs 2.6× the wire size.
+
+What precision does buy is shape fidelity when zoomed in — at 16× on a phone one map unit
+is about 3px, so coastlines visibly stair-step, and Phase 8 zooms in far more than the
+typing modes ever do. The targeted variant, 10m geometry for the small countries only, is
+the good-value one. Cosmetic, and last in the queue.
