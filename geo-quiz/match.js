@@ -24,48 +24,58 @@ export function normalise(s) {
 }
 
 /**
- * True if `a` and `b` are one typo apart: a single insertion, deletion, substitution, or
- * a transposition of two adjacent characters.
+ * Damerau edit distance between `a` and `b` -- insertion, deletion, substitution, or a
+ * transposition of two adjacent characters. Optimal string alignment, so a substring is
+ * never edited twice; that distinction cannot arise between two country names.
  *
- * Transpositions ("Austrai" for "Austria") are Levenshtein distance 2 but are one of the
- * commonest typing slips. Including them is free here because this only ever chooses the
- * wording of the feedback -- it never credits an answer.
+ * Bounded: it gives up as soon as a whole row exceeds `max` and returns `max + 1`. The
+ * caller only ever asks "is this within N", so the exact distance beyond N is wasted work.
  */
-function isNearMiss(a, b) {
-  if (withinOneEdit(a, b)) return true;
-  if (a.length !== b.length) return false;
+export function editDistance(a, b, max = 1) {
+  if (a === b) return 0;
+  if (Math.abs(a.length - b.length) > max) return max + 1;
 
-  const diff = [];
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i] && diff.push(i) > 2) return false;
+  let twoBack = null;
+  let oneBack = Array.from({ length: b.length + 1 }, (_, j) => j);
+
+  for (let i = 1; i <= a.length; i++) {
+    const row = new Array(b.length + 1);
+    row[0] = i;
+    let best = i;
+
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let d = Math.min(oneBack[j] + 1, row[j - 1] + 1, oneBack[j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d = Math.min(d, twoBack[j - 2] + 1);
+      }
+      row[j] = d;
+      if (d < best) best = d;
+    }
+
+    if (best > max) return max + 1;
+    twoBack = oneBack;
+    oneBack = row;
   }
-  return (
-    diff.length === 2 &&
-    diff[1] === diff[0] + 1 &&
-    a[diff[0]] === b[diff[1]] &&
-    a[diff[1]] === b[diff[0]]
-  );
+
+  return oneBack[b.length];
 }
 
-/** True if `a` and `b` are at most one insertion, deletion or substitution apart. */
-function withinOneEdit(a, b) {
-  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
-  if (long.length - short.length > 1) return false;
-
-  let i = 0;
-  let j = 0;
-  let slack = 1;
-  while (i < short.length && j < long.length) {
-    if (short[i] === long[j]) {
-      i++;
-      j++;
-      continue;
-    }
-    if (slack-- === 0) return false;
-    if (short.length === long.length) i++;
-    j++;
-  }
-  return true;
+/**
+ * True if `a` and `b` are at most `max` typos apart.
+ *
+ * The default of one is what the near-miss hint below needs, and it must stay one: the
+ * most confusable country pairs are two edits apart, so a looser default here would start
+ * calling Niger/Nigeria a spelling slip. Transpositions ("Austrai" for "Austria") are
+ * distance 2 under plain Levenshtein but one of the commonest typing slips, which is why
+ * this is Damerau -- and it is free, because this only ever chooses the wording of the
+ * feedback and never credits an answer.
+ *
+ * The identify-mode distractor engine (docs/PLAN.md §10) is the caller that passes a
+ * larger `max`: it wants exactly the confusable pairs this one is careful to exclude.
+ */
+export function isNearMiss(a, b, max = 1) {
+  return editDistance(a, b, max) <= max;
 }
 
 const byM49 = new Map(COUNTRIES.map((c) => [c.m49, c]));

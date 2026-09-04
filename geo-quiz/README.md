@@ -46,6 +46,14 @@ fetch `data/world.svg`, so it needs to be served over HTTP rather than opened fr
 npm run serve      # http://localhost:8080
 ```
 
+The answer matcher and the identify-mode distractor engine have tests, which need no
+browser and no network:
+
+```bash
+npm install
+npm test
+```
+
 ## Regenerating the map and answer data
 
 `data/world.svg` and `data/countries.js` are **generated and committed**. You only need

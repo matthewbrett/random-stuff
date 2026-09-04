@@ -6,8 +6,8 @@ join a running list. A timer measures the whole attempt.
 
 **Status:** Phases 0–7 complete and wired into the deploy pipeline; publishes to
 `/random-stuff/geo-quiz/` on merge to `main`. Phase 8 (identify mode, §10) is designed;
-8a is built — the data the engine needs is generated and asserted — and 8b–8d are not
-started, so the mode is not yet playable.
+8a and 8b are built — the data the engine needs, and the engine itself, both tested — and
+8c–8d are not started, so nothing imports the engine and the mode is not yet playable.
 **Last Updated:** 2026-09-04
 
 ---
@@ -696,6 +696,12 @@ Nauru       Tonga · Marshall Islands · Micronesia · Kiribati · [Nauru] · Pa
 Austria pulling in Australia is the engine working as intended. Dominica's set is the
 case that *must* get a context frame or it is a coin flip.
 
+They are asserted as **properties** rather than as literal six-country sets — that
+Slovakia's hard set contains Slovenia, that Dominica's is entirely Caribbean, that easy
+spans six continents. A set can be completely correct without being the one written down
+here, and 8d is going to move these weights, so string-equality fixtures would go red for
+reasons nobody cares about. Determinism is covered separately, by seed.
+
 ### Sub-regions
 
 The engine needs a finer grain than the six continents. Eighteen sub-regions, each
@@ -755,12 +761,46 @@ tool can tell you and it costs a `Map` and a sort.
 | Step | Deliverable |
 |---|---|
 | **8a** ✓ | Sub-region table + shape descriptors + anchors in `build-data.mjs`, with both invariants asserted |
-| 8b | `distract.js` — the scoring engine, standalone and testable with no UI. The sample sets above are the fixtures |
+| **8b** ✓ | `distract.js` — the scoring engine, standalone and testable with no UI. The sample sets above are the fixtures |
 | 8c | Question loop, option grid, framing. Countries only |
 | 8d | Difficulty picker wired to tightness, framing and count together |
 
 8d comes last deliberately: where the line between *hard* and *unfair* actually falls is
 not knowable until the thing is played.
+
+### Phase 8b notes
+
+`distract.js`, `tools/distract.test.mjs`, and `npm test` — 20 tests on Node's built-in
+runner, no new dependencies. Nothing imports the engine yet, so the game is unchanged.
+
+**`match.js` was generalised, carefully.** `isNearMiss` is now `isNearMiss(a, b, max = 1)`
+over a new exported `editDistance`, bounded Damerau in the optimal-string-alignment form.
+The default has to stay 1 — §5 uses it to phrase spelling hints, and the pairs the
+distractor engine wants are exactly the ones the hint must keep rejecting, or `Nigera`
+starts being read as a typo for Nigeria rather than Niger. Equivalence with the old
+implementation was checked over **5.8 million pairs** — every accepted spelling against
+every single-edit mutation of every accepted spelling — with no behavioural difference at
+`max = 1`.
+
+**A name twin needs three tests, not one.** Edit distance alone misses
+Dominica/Dominican Republic, which differs by a whole word; a shared significant word
+misses it too, since "Dominica" and "Dominican" are different strings. So a prefix of five
+or more characters counts as well. Stopwords matter in the other direction: without them
+North Korea twins with North Macedonia, which nobody confuses.
+
+Three things the tests found that review had not:
+
+- **Medium tier had no pool for two continents.** It is defined as "same continent,
+  different sub-region", but South America and Oceania are each a single sub-region, so
+  that set is empty for all 26 of their countries and the tier fell through to another
+  continent — making medium *easier* than easy there. They now take the far end of their
+  own region instead: still South American, just not Peru's neighbours.
+- **Ireland and Iceland are one edit apart.** They were written into the test as a pair
+  that should *not* twin, on the reasoning that their names share nothing. They differ by
+  a single character, and are confused constantly by actual people. The test was wrong.
+- **Guinea has three twins** — Guinea-Bissau, Equatorial Guinea, Papua New Guinea. Only
+  one is seated, so it must be the strongest: a set is only as hard as its closest wrong
+  answer.
 
 ### Phase 8a notes
 
